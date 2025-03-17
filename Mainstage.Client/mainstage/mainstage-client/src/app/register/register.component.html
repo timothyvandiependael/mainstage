@@ -1,0 +1,31 @@
+<div class="register-container">
+    <div class="logo-container">
+        <img src="assets/mainstage-logo.png" alt="Mainstage Logo" class="logo"/>
+    </div>
+    <form #emailForm="ngForm" (ngSubmit)="onRegister(emailForm)" class="register-form">
+        <h2>Nieuwe account aanmaken</h2>
+        <label for="username">Gebruikersnaam</label>
+        <input type="text" id="username" [(ngModel)]="username" name="username" placeholder="Voer je gebruikersnaam in" required/>
+
+        <label for="email">Email</label>
+        <input type="email" id="email" [(ngModel)]="email" name="email" placeholder="Voer je emailadres in" required email #emailInput="ngModel"/>
+
+        <div *ngIf="emailInput.invalid && emailInput.touched" class="error-message">
+            <p *ngIf="emailInput.errors?.['required']">Email veld is verplicht.</p>
+            <p *ngIf="emailInput.errors?.['email']">Voer een geldig emailadres in.</p>
+        </div>
+
+        <label for="password">Wachtwoord</label>
+        <input type="password" id="password" [(ngModel)]="password" name="password" placeholder="Voer je wachtwoord in" required/>
+
+        <label for="passwordconfirm">Bevestiging wachtwoord</label>
+        <input type="password" id="passwordconfirm" [(ngModel)]="passwordconfirm" name="passwordconfirm" placeholder="Bevestig je wachtwoord" required/>
+
+        <div *ngIf="errorMessage" class="error-message">
+            <p>{{ errorMessage }}</p>
+        </div>
+
+        <button type="submit" [disabled]="emailForm.invalid" class="register-button">Registreer</button>
+    </form>
+</div>>
+

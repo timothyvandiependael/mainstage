@@ -1,0 +1,59 @@
+<!-- Card Popup -->
+<div id="cardPopup" class="popup hidden">
+    <img src="assets/images/card-background.png" class="card-bg" />
+    <div class="card-text">{{ cardText }}</div>
+
+    <div *ngIf="showCardButtons" class="button-container">
+        <button (click)="playCard()">Play</button>
+        <div *ngIf="showStashButton">
+            <button (click)="stashCard()">Stash</button>
+        </div>
+    </div>
+</div>
+
+<app-action-popup
+  *ngIf="actionPopupData"
+  [data]="actionPopupData"
+  (actionSelected)="handleActionChoice($event)">
+</app-action-popup>
+
+<div class="game-container">
+    <div class="top-bar">
+        <button>Forfeit</button>
+        <button>Settings</button>
+    </div>
+
+    <div class="screen-layout">
+        <div class="game-layout">
+            <div class="game-column player-column">
+                <div class="player player-left events">
+                    <div *ngFor="let eventText of eventTextQueue" class="events-text">
+                        <span class="event-text-entry">{{eventText}}</span>
+                    </div>
+                </div>
+
+                <div *ngFor="let player of game.players; let i = index" class="player player-left"
+                    [ngClass]="{ 'active-player': turnPlayerId == player.playerId}">
+                    <span class="player-name">{{player.playerId}}</span>
+                    <div class="player-data">
+                        <div class="player-cards">Cards</div>
+                        <canvas #diceCanvas width="46" height="46" (click)="rollDice(i, true)"
+                            class="dice-canvas"></canvas>>
+                    </div>
+                </div>
+            </div>
+            <div class="game-column board-column">
+                <div class="game-board">
+                    <canvas #gameCanvas></canvas>
+                </div>
+            </div>
+        </div>
+
+        <div class="chat-log">
+            <div class="chat-messages"></div>
+            <input type="text" placeholder="Typ een bericht...">
+        </div>
+    </div>
+
+
+</div>

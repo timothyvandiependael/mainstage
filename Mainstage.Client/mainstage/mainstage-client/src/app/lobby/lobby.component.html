@@ -1,0 +1,52 @@
+<div class="lobby-container">
+    <div class="top-bar">
+        <button class="btn-left" (click)="openNewGameDialog()">Nieuw spel</button>
+        <div class="btn-right">
+            <button>Opties</button>
+            <button>Account</button>
+            <button (click)="logOut()">Uitloggen</button>
+        </div>
+    </div>
+
+    <div class="main-content">
+
+        <div class="game-list">
+            <div *ngIf="isGamesLoading$ | async" class="loading-overlay">
+                <div class="loading-spinner">
+                    Loading...
+                </div>
+              </div>
+            <div [hidden]="isGamesLoading$ | async" *ngIf="openGames != null && openGames.length > 0">
+                <div *ngFor="let game of openGames" class="game-card">
+                    <h3>{{ game.name }}</h3>
+                    <p>Spelers: {{ game.players.length }}/{{ game.options.playerAmount }}</p>
+                    <button (click)="joinGame(game)">Join</button>
+                </div>
+            </div>
+            <div [hidden]="isGamesLoading$ | async" *ngIf="(openGames == null || openGames.length == 0)" class="no-games">
+                <p>Geen open spellen op dit moment.</p>
+            </div>
+        </div>
+
+        <div class="chat">
+            <div *ngIf="isChatLoading$ | async" class="loading-overlay">
+                <div class="loading-spinner">
+                    Loading...
+                </div>
+              </div>
+            <div #lobbyMessages class="messages">
+                <div *ngFor="let message of messages" class="chat-message">
+                    <span>[{{ message.crDate | date:'yyyy-MM-dd HH:mm' }}] {{ message.playerId }}: </span>{{ message.message }}
+                </div>
+            </div>
+
+            <input
+                type="text"
+                [(ngModel)]="newMessage"
+                (keyup.enter)="sendMessage()"
+                placeholder="Typ hier een bericht..."
+                class="chat-input"
+            />
+        </div>
+    </div>
+</div>

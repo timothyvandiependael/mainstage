@@ -1,0 +1,7 @@
+::ng-deep .mat-mdc-dialog-surface {
+    --mdc-dialog-container-color: black !important;
+  }
+
+  ::ng-deep .mat-mdc-dialog-container {
+    --mdc-dialog-subhead-color: white !important;
+  }

@@ -1,0 +1,13 @@
+<div class="popup">
+    <div class="popup-content">
+      <h2>{{ data && data.description ? data.description : '' }}</h2>
+  
+      <div *ngIf="data && data.options">
+        <button *ngFor="let option of data.options" (click)="selectOption(option)">
+          {{ option.name || option }}
+        </button>
+      </div>
+  
+      <button (click)="selectOption(null)">Cancel</button>
+    </div>
+  </div>

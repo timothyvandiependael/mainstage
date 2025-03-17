@@ -1,0 +1,39 @@
+<h2 mat-dialog-title>Nieuw Spel</h2>
+<div mat-dialog-content>
+  <mat-form-field appearance="fill">
+    <mat-label>Aantal Spelers</mat-label>
+    <mat-select [(ngModel)]="gameOptions.playerAmount">
+        <mat-option *ngFor="let num of playerAmountOptions" [value]="num">
+            {{ num }}
+        </mat-option>
+    </mat-select>
+  </mat-form-field>
+
+  <mat-form-field appearance="fill">
+    <mat-label>Tijdlimiet voor beurt</mat-label>
+    <mat-select [(ngModel)]="gameOptions.turnTimeLimit">
+        <mat-option *ngFor="let num of turnTimeLimitOptions" [value]="num">
+            {{ num }}
+        </mat-option>
+    </mat-select>
+</mat-form-field>
+
+    <mat-form-field appearance="fill">
+        <mat-label>Tijdlimiet voor reacties</mat-label>
+        <mat-select [(ngModel)]="gameOptions.reactionTimeLimit">
+            <mat-option *ngFor="let num of reactionTimeLimitOptions" [value]="num">
+                {{ num }}
+            </mat-option>
+        </mat-select>
+    </mat-form-field>
+    
+    <mat-checkbox [(ngModel)]="gameOptions.aiPlayers">Gebruik AI spelers</mat-checkbox>
+    <mat-checkbox [(ngModel)]="gameOptions.useMegaFatLady">Gebruik Mega Fat Lady</mat-checkbox>
+</div>
+
+
+
+<div mat-dialog-actions>
+  <button mat-button (click)="cancel()">Annuleren</button>
+  <button mat-button color="primary" (click)="confirm()">Bevestigen</button>
+</div>

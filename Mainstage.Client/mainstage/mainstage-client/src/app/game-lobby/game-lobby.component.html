@@ -1,0 +1,38 @@
+<div class="game-lobby-container">
+    <div class="main-content">
+        <div class="game-detail">
+            <div *ngIf="isGameDetailLoading$ | async" class="loading-overlay">
+                <div class="loading-spinner">
+                    Loading...
+                </div>
+              </div>
+            <div [hidden]="isGameDetailLoading$ | async" class="wait-info">
+                <p>{{ currentPlayerAmount }} / {{ game.options.playerAmount}} spelers</p>
+            </div>
+            <div [hidden]="isGameDetailLoading$ | async" class="game-options">
+                
+            </div>
+            <div [hidden]="isGameDetailLoading$ | async" class="game-buttons">
+                <button (click)="ready()">Klaar om te spelen</button>
+                <button (click)="exit()">{{ isCreator ? 'Annuleer spel' : 'Verlaat spel'}}</button>
+            </div>
+        </div>
+
+        <div class="chat">
+            <div *ngIf="isChatLoading$ | async" class="loading-overlay">
+                <div class="loading-spinner">
+                    Loading...
+                </div>
+              </div>
+            <div #gameLobbyMessages class="messages">
+                <div *ngFor="let message of messages" [hidden]="isChatLoading$ | async" class="chat-message">
+                    <span>[{{ message.crDate | date:'yyyy-MM-dd HH:mm' }}]{{ message.playerId == 'sys' ? '' : (' ' + message.playerId )}}: </span>{{
+                    message.message }}
+                </div>
+            </div>
+
+            <input type="text" [(ngModel)]="newMessage" (keyup.enter)="sendMessage()"
+                placeholder="Typ hier een bericht..." class="chat-input" />
+        </div>
+    </div>
+</div>

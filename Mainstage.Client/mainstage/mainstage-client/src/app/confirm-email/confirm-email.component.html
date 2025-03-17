@@ -1,0 +1,11 @@
+<div class="register-container">
+    <div class="logo-container">
+        <img src="assets/mainstage-logo.png" alt="Mainstage Logo" class="logo"/>
+    </div>
+    <form *ngIf="message" class="register-form">
+        <h2>{{ message }}</h2>
+       
+        <button *ngIf="success" type="button" class="register-button" (click)="onButtonClick()">Naar loginpagina</button>
+    </form>
+</div>>
+
