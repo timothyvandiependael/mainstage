@@ -12,10 +12,12 @@ namespace Mainstage.API.Services
     public class CardService
     {
         private readonly CardManager _cardManager;
+        private readonly GameActionService _gameActionService;
 
-        public CardService(CardManager cardManager)
+        public CardService(CardManager cardManager, GameActionService gameActionService)
         {
             _cardManager = cardManager;
+            _gameActionService = gameActionService;
         }
 
         public async Task PlayCard(GameStateInfo info, string playerId, Card card, Dictionary<string, string> parameters, GameLogicService gameLogicService)
@@ -103,7 +105,7 @@ namespace Mainstage.API.Services
             // Player teleports to main stage, where he has to roll, and if he fails, he goes back to Jeugdhuis stage, as handled in GameLogicService Perform method
             var player = info.Game.Players.Where(p => p.PlayerId == playerId).First();
             player.ActiveEffects.Add("allornothing", "");
-            gameLogicService.InsertInActionSequence(info, playerId, "teleport", "69");
+            _gameActionService.InsertInActionSequence(info, playerId, "teleport", "69");
             await gameLogicService.Teleport(info, playerId);
         }
 
@@ -118,7 +120,7 @@ namespace Mainstage.API.Services
                 var rollTurnAction = info.Game.Actions.FindLast(a => a.PlayerId == targetId && a.ActionType == "moveroll");
                 if (rollTurnAction != null)
                 {
-                    gameLogicService.InsertInActionSequence(info, targetId, "movebackwards", rollTurnAction.Parameter);
+                    _gameActionService.InsertInActionSequence(info, targetId, "movebackwards", rollTurnAction.Parameter);
                     await gameLogicService.ActionSequenceNext(info);
                 }
             }
@@ -134,7 +136,7 @@ namespace Mainstage.API.Services
                 var rollTurnAction = info.Game.Actions.FindLast(a => a.PlayerId == targetId && a.ActionType == "moveroll");
                 if (rollTurnAction != null)
                 {
-                    gameLogicService.InsertInActionSequence(info, playerId, "moveforwardbandwagon", rollTurnAction.Parameter);
+                    _gameActionService.InsertInActionSequence(info, playerId, "moveforwardbandwagon", rollTurnAction.Parameter);
                 }
             }
         }
@@ -144,7 +146,7 @@ namespace Mainstage.API.Services
             // Setting up rolls for all player, then no other code executed => return to client
             for (var i = 0; i < info.Game.Players.Count; i++)
             {
-                gameLogicService.InsertInActionSequence(info, info.Game.Players[i].PlayerId, "awaitingcollectiveroll", card.Id.ToString());
+                _gameActionService.InsertInActionSequence(info, info.Game.Players[i].PlayerId, "awaitingcollectiveroll", card.Id.ToString());
             }
         }
 
@@ -171,7 +173,7 @@ namespace Mainstage.API.Services
                 {
                     sum += int.Parse(roll.Parameter);
                 }
-                gameLogicService.InsertInActionSequence(info, playCardAction.PlayerId, "movebackwards", sum.ToString());
+                _gameActionService.InsertInActionSequence(info, playCardAction.PlayerId, "movebackwards", sum.ToString());
 
                 var car = new ClientActionReport
                 {
@@ -208,7 +210,7 @@ namespace Mainstage.API.Services
                 if (equalPlayers.Count > 1)
                 {
                     // Only these players roll again
-                    gameLogicService.AddActionHistory(info, playCardAction.PlayerId, "reroll", "");
+                    _gameActionService.AddActionHistory(info, playCardAction.PlayerId, "reroll", "");
 
                     var car = new ClientActionReport
                     {
@@ -220,7 +222,7 @@ namespace Mainstage.API.Services
 
                     foreach (var player in equalPlayers)
                     {
-                        gameLogicService.InsertInActionSequence(info, player.PlayerId, "collectiveroll", card.Id.ToString());
+                        _gameActionService.InsertInActionSequence(info, player.PlayerId, "collectiveroll", card.Id.ToString());
                         car.EventMessage += player.PlayerId + ", ";
                     }
                     car.EventMessage.Remove(car.EventMessage.Length - 2);
@@ -267,7 +269,7 @@ namespace Mainstage.API.Services
                         EventMessage = $"{equalPlayers.First().PlayerId} {eventMessageEnd}"
                     };
                     info.ClientActionReportQueue.Add(car);
-                    gameLogicService.InsertInActionSequence(info, equalPlayers.First().PlayerId, targetActionType, targetValue);
+                    _gameActionService.InsertInActionSequence(info, equalPlayers.First().PlayerId, targetActionType, targetValue);
 
                 }
                 await gameLogicService.ActionSequenceNext(info);
@@ -283,7 +285,7 @@ namespace Mainstage.API.Services
 
             foreach (var player in playersInOrder)
             {
-                gameLogicService.InsertInActionSequence(info, player.PlayerId, "drawcard", string.Empty);
+                _gameActionService.InsertInActionSequence(info, player.PlayerId, "drawcard", string.Empty);
             }
 
             await gameLogicService.ActionSequenceNext(info);
@@ -294,7 +296,7 @@ namespace Mainstage.API.Services
             // Either player who drew the card, or all players in case of 'mega fat lady', must lose all their cards and further actions, and return to tile 0
             if (card.Parameter1 == "self")
             {
-                gameLogicService.InsertInActionSequence(info, playerId, "fatlady", string.Empty);
+                _gameActionService.InsertInActionSequence(info, playerId, "fatlady", string.Empty);
                 var car = new ClientActionReport
                 {
                     PlayerId = playerId,
@@ -314,7 +316,7 @@ namespace Mainstage.API.Services
                 };
                 foreach (var player in info.Game.Players)
                 {
-                    gameLogicService.InsertInActionSequence(info, player.PlayerId, "fatlady", string.Empty);
+                    _gameActionService.InsertInActionSequence(info, player.PlayerId, "fatlady", string.Empty);
                 }
                 await gameLogicService.ActionSequenceNext(info);
             }
@@ -338,15 +340,15 @@ namespace Mainstage.API.Services
                 info.ActionSequence.Remove(entry);
             }
 
-            gameLogicService.AddActionHistory(info, playerId, "teleport", "0");
+            _gameActionService.AddActionHistory(info, playerId, "teleport", "0");
             await gameLogicService.Teleport(info, playerId, true); // Teleport with no further action on destination tile 0
         }
 
         public async void PlayJoker(GameStateInfo info, string playerId, GameLogicService gameLogicService, string jokerCard)
         {
             // Play any card (that is applicable in the situation, because this card is not a keeper)
-            gameLogicService.AddActionHistory(info, playerId, "playjoker", "");
-            gameLogicService.InsertInActionSequence(info, playerId, "drawetherealcard", jokerCard);
+            _gameActionService.AddActionHistory(info, playerId, "playjoker", "");
+            _gameActionService.InsertInActionSequence(info, playerId, "drawetherealcard", jokerCard);
         }
 
         public async Task PlayLoseCards(GameStateInfo info, string playerId, GameLogicService gameLogicService, Card card)
@@ -355,13 +357,13 @@ namespace Mainstage.API.Services
 
             if (card.Parameter1 == "self")
             {
-                gameLogicService.InsertInActionSequence(info, playerId, "losecards", string.Empty);
+                _gameActionService.InsertInActionSequence(info, playerId, "losecards", string.Empty);
             }
             else if (card.Parameter1 == "everyone")
             {
                 foreach (var player in info.Game.Players)
                 {
-                    gameLogicService.InsertInActionSequence(info, player.PlayerId, "losecards", string.Empty);
+                    _gameActionService.InsertInActionSequence(info, player.PlayerId, "losecards", string.Empty);
                 }
             }
 
@@ -400,7 +402,7 @@ namespace Mainstage.API.Services
 
             gameLogicService.ReactToAction(info.Game.Id, cardToCopyEntry.PlayerId, false);
 
-            gameLogicService.InsertInActionSequence(info, playerId, "drawetherealcard", cardToCopyEntry.Parameter);
+            _gameActionService.InsertInActionSequence(info, playerId, "drawetherealcard", cardToCopyEntry.Parameter);
         }
 
         public async Task PlayMove(GameStateInfo info, string playerId, GameLogicService gameLogicService, Card card, Dictionary<string, string> parameters) // All cards that move a player
@@ -428,7 +430,7 @@ namespace Mainstage.API.Services
                         ? currentPlayer.PlayerId
                         : parameters["targetid"];
 
-                    gameLogicService.InsertInActionSequence(info, targetPlayerId, "move" + moveType, moveAmount);
+                    _gameActionService.InsertInActionSequence(info, targetPlayerId, "move" + moveType, moveAmount);
                     break;
 
                 case "everyone":
@@ -436,7 +438,7 @@ namespace Mainstage.API.Services
                     players.Reverse();
                     foreach (var player in players)
                     {
-                        gameLogicService.InsertInActionSequence(info, player.PlayerId,
+                        _gameActionService.InsertInActionSequence(info, player.PlayerId,
                             "move" + (int.Parse(card.Parameter2) > 0 ? "forward" : "backwards"),
                             Math.Abs(int.Parse(card.Parameter2)).ToString());
                     }
@@ -446,8 +448,8 @@ namespace Mainstage.API.Services
                     var amount = Math.Abs(int.Parse(card.Parameter2)).ToString();
                     var type = "move" + (int.Parse(card.Parameter2) > 0 ? "forward" : "backwards");
                     var opponentId = parameters["targetid"];
-                    gameLogicService.InsertInActionSequence(info, opponentId, type, amount);
-                    gameLogicService.InsertInActionSequence(info, currentPlayer.PlayerId, type, amount);
+                    _gameActionService.InsertInActionSequence(info, opponentId, type, amount);
+                    _gameActionService.InsertInActionSequence(info, currentPlayer.PlayerId, type, amount);
                     break;
                 case "self1opponent2":
                 case "self1opponent2 skipstage":
@@ -465,7 +467,7 @@ namespace Mainstage.API.Services
                         moveDistance = int.Parse(card.Parameter4);
                     }
 
-                    gameLogicService.InsertInActionSequence(info, targetId,
+                    _gameActionService.InsertInActionSequence(info, targetId,
                       "move" + (moveDistance > 0 ? "forward" + (skipStage ? "andskipstage" : "") : "backwards"), moveDistance.ToString());
                     break;
             }
@@ -504,7 +506,7 @@ namespace Mainstage.API.Services
             if (targetCard.CardType != "nope")
             {
                 gameLogicService.ReactToAction(info.Game.Id, lastPlayedCardEntry.PlayerId, true);
-                gameLogicService.AddActionHistory(info, "noped", playerId, lastPlayedCardEntry.Parameter);
+                _gameActionService.AddActionHistory(info, "noped", playerId, lastPlayedCardEntry.Parameter);
 
                 var car = new ClientActionReport
                 {
@@ -526,7 +528,7 @@ namespace Mainstage.API.Services
             if (targetCard.CardType == "nope")
             {
                 gameLogicService.ReactToAction(info.Game.Id, lastPlayedCardEntry.PlayerId, true);
-                gameLogicService.AddActionHistory(info, "noped", playerId, lastPlayedCardEntry.Parameter);
+                _gameActionService.AddActionHistory(info, "noped", playerId, lastPlayedCardEntry.Parameter);
 
                 var car = new ClientActionReport
                 {
@@ -556,7 +558,7 @@ namespace Mainstage.API.Services
             var targetPlayer = info.Game.Players.Where(p => p.PlayerId == targetPlayerId).First();
             targetPlayer.TurnStartMode = "panne";
 
-            gameLogicService.AddActionHistory(info, targetPlayerId, "panne", "");
+            _gameActionService.AddActionHistory(info, targetPlayerId, "panne", "");
 
             await gameLogicService.ActionSequenceNext(info);
         }
@@ -610,7 +612,7 @@ namespace Mainstage.API.Services
                 }
             }
 
-            gameLogicService.AddActionHistory(info, playerId, "passedcards", card.Parameter1);
+            _gameActionService.AddActionHistory(info, playerId, "passedcards", card.Parameter1);
             await gameLogicService.ActionSequenceNext(info);
         }
 
@@ -618,7 +620,7 @@ namespace Mainstage.API.Services
         {
             var player = info.Game.Players.Where(p => p.PlayerId == playerId).First();
             var lastRoll = info.Game.Actions.Where(t => t.PlayerId == player.PlayerId && t.ActionType == "moveroll").Last();
-            gameLogicService.InsertInActionSequence(info, player.PlayerId, "moveforward", lastRoll.Parameter);
+            _gameActionService.InsertInActionSequence(info, player.PlayerId, "moveforward", lastRoll.Parameter);
 
             await gameLogicService.ActionSequenceNext(info);
         }
@@ -626,7 +628,7 @@ namespace Mainstage.API.Services
         public async Task PlayShuffle(GameStateInfo info, string playerId, GameLogicService gameLogicService)
         {
             gameLogicService.Shuffle(info);
-            gameLogicService.AddActionHistory(info, playerId, "shuffledeck", "");
+            _gameActionService.AddActionHistory(info, playerId, "shuffledeck", "");
             await gameLogicService.ActionSequenceNext(info);
         } // Shuffle discard into drawpile
 
@@ -635,7 +637,7 @@ namespace Mainstage.API.Services
             var player = info.Game.Players.Where(p => p.PlayerId == playerId).First();
             player.TurnStartMode = "skipturn " + card.Parameter2;
             // Parameter2: Amount of turns to skip
-            gameLogicService.AddActionHistory(info, player.PlayerId, "skipturn", card.Parameter2);
+            _gameActionService.AddActionHistory(info, player.PlayerId, "skipturn", card.Parameter2);
             await gameLogicService.ActionSequenceNext(info);
             // Keeping track of turn losses in GameLogicService EndTurn method
         } // Player must skip 1 or 2 turns depending on card
@@ -648,7 +650,7 @@ namespace Mainstage.API.Services
             var currentPlayer = info.Game.Players.Where(p => p.PlayerId == playerId).First();
             currentPlayer.Cards.Add(targetCard);
             targetPlayer.Cards.Remove(targetCard);
-            gameLogicService.AddActionHistory(info, playerId, "cardstolen", targetPlayer.PlayerId + " " + targetCard.Id.ToString());
+            _gameActionService.AddActionHistory(info, playerId, "cardstolen", targetPlayer.PlayerId + " " + targetCard.Id.ToString());
             await gameLogicService.ActionSequenceNext(info);
         } // Steal a card
 
@@ -659,8 +661,8 @@ namespace Mainstage.API.Services
             var currentPosition = currentPlayer.Position.ToString();
             var targetPosition = targetPlayer.Position.ToString();
 
-            gameLogicService.InsertInActionSequence(info, targetPlayer.PlayerId, "teleport", currentPosition);
-            gameLogicService.InsertInActionSequence(info, currentPlayer.PlayerId, "teleport", targetPosition);
+            _gameActionService.InsertInActionSequence(info, targetPlayer.PlayerId, "teleport", currentPosition);
+            _gameActionService.InsertInActionSequence(info, currentPlayer.PlayerId, "teleport", targetPosition);
 
             targetPlayer.Position = int.Parse(currentPosition);
             currentPlayer.Position = int.Parse(targetPosition); // Already adjust position to prevent players from doing battle when teleported
@@ -692,7 +694,7 @@ namespace Mainstage.API.Services
                     var stageTile = info.Game.Tiles.OrderBy(t => t.Id).Where(t => t.Id < player.Position && t.IsStage).LastOrDefault();
                     if (stageTile != null)
                     {
-                        gameLogicService.InsertInActionSequence(info, player.PlayerId, "teleport", stageTile.Id.ToString());
+                        _gameActionService.InsertInActionSequence(info, player.PlayerId, "teleport", stageTile.Id.ToString());
                     }
                 }
                 else if (card.Parameter2 == "nextstage")
@@ -700,7 +702,7 @@ namespace Mainstage.API.Services
                     var stageTile = info.Game.Tiles.OrderBy(t => t.Id).Where(t => t.Id > player.Position && t.IsStage).First();
                     if (stageTile != null)
                     {
-                        gameLogicService.InsertInActionSequence(info, player.PlayerId, "teleport", stageTile.Id.ToString());
+                        _gameActionService.InsertInActionSequence(info, player.PlayerId, "teleport", stageTile.Id.ToString());
                     }
                 }
                 else if (card.Parameter2 == "jeugdhuis")
@@ -708,12 +710,12 @@ namespace Mainstage.API.Services
                     var stageTile = info.Game.Tiles.Where(t => t.Stage == 1).First();
                     if (stageTile != null)
                     {
-                        gameLogicService.InsertInActionSequence(info, player.PlayerId, "teleport", stageTile.Id.ToString());
+                        _gameActionService.InsertInActionSequence(info, player.PlayerId, "teleport", stageTile.Id.ToString());
                     }
                 }
                 else
                 {
-                    gameLogicService.InsertInActionSequence(info, player.PlayerId, "teleport", card.Parameter2);
+                    _gameActionService.InsertInActionSequence(info, player.PlayerId, "teleport", card.Parameter2);
                 }
             }
 
@@ -723,7 +725,7 @@ namespace Mainstage.API.Services
         public async Task PlayTousEnsemble(GameStateInfo info, string playerId, GameLogicService gameLogicService, Dictionary<string, string> parameters) // Kies een tegenstander die hetzelfde moet doen als opdracht van laatst getrokken kaart
         {
             var lastPlayedCardEntry = info.Game.Actions.Where(t => t.ActionType == "playcard" && t.Parameter != "74").Last(); // 74 - Id of Tous ensemble card
-            gameLogicService.InsertInActionSequence(info, parameters["targetid"], "drawetherealcard", lastPlayedCardEntry.Parameter);
+            _gameActionService.InsertInActionSequence(info, parameters["targetid"], "drawetherealcard", lastPlayedCardEntry.Parameter);
             await gameLogicService.ActionSequenceNext(info);
         }
 
@@ -733,7 +735,7 @@ namespace Mainstage.API.Services
             var tile = info.Game.Tiles.Where(t => t.Id == player.Position).First();
             if (tile.ArrowSource != 0)
             {
-                gameLogicService.InsertInActionSequence(info, playerId, "zalmtravel", tile.ArrowSource.ToString());
+                _gameActionService.InsertInActionSequence(info, playerId, "zalmtravel", tile.ArrowSource.ToString());
 
                 await gameLogicService.ActionSequenceNext(info);
             }

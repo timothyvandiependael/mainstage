@@ -91,3 +91,13 @@ C:\Users\timot\source\repos\Mainstage.API\Mainstage.API\bin\Debug\net6.0\System.
 C:\Users\timot\source\repos\Mainstage.API\Mainstage.API\bin\Debug\net6.0\System.Text.Encodings.Web.dll
 C:\Users\timot\source\repos\Mainstage.API\Mainstage.API\bin\Debug\net6.0\System.Threading.Channels.dll
 C:\Users\timot\source\repos\Mainstage.API\Mainstage.API\bin\Debug\net6.0\runtimes\browser\lib\net6.0\System.Text.Encodings.Web.dll
+C:\Users\timot\source\repos\Mainstage\Mainstage.API\Mainstage.API\obj\Debug\net6.0\Mainstage.API.csproj.AssemblyReference.cache
+C:\Users\timot\source\repos\Mainstage\Mainstage.API\Mainstage.API\obj\Debug\net6.0\Mainstage.API.GeneratedMSBuildEditorConfig.editorconfig
+C:\Users\timot\source\repos\Mainstage\Mainstage.API\Mainstage.API\obj\Debug\net6.0\Mainstage.API.AssemblyInfoInputs.cache
+C:\Users\timot\source\repos\Mainstage\Mainstage.API\Mainstage.API\obj\Debug\net6.0\Mainstage.API.AssemblyInfo.cs
+C:\Users\timot\source\repos\Mainstage\Mainstage.API\Mainstage.API\obj\Debug\net6.0\Mainstage.API.csproj.CoreCompileInputs.cache
+C:\Users\timot\source\repos\Mainstage\Mainstage.API\Mainstage.API\obj\Debug\net6.0\Mainstage.API.MvcApplicationPartsAssemblyInfo.cs
+C:\Users\timot\source\repos\Mainstage\Mainstage.API\Mainstage.API\obj\Debug\net6.0\Mainstage.API.MvcApplicationPartsAssemblyInfo.cache
+C:\Users\timot\source\repos\Mainstage\Mainstage.API\Mainstage.API\obj\Debug\net6.0\Mainstage.API.dll
+C:\Users\timot\source\repos\Mainstage\Mainstage.API\Mainstage.API\obj\Debug\net6.0\refint\Mainstage.API.dll
+C:\Users\timot\source\repos\Mainstage\Mainstage.API\Mainstage.API\obj\Debug\net6.0\Mainstage.API.pdb

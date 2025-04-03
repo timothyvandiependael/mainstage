@@ -23,12 +23,14 @@ namespace Mainstage.API.Services
         private readonly CardManager _cardManager;
         private readonly GameManager _gameManager;
         private readonly GameActionManager _gameActionManager;
+        private readonly GameActionService _gameActionService;
         public GameLogicService(
             CardService cardService,
             CardManager cardManager,
             GameManager gameManager,
             GameActionManager gameActionManager,
-            IHubContext<GameHub> hubContext
+            IHubContext<GameHub> hubContext,
+            GameActionService gameActionService
             )
         {
             _cardService = cardService;
@@ -36,6 +38,7 @@ namespace Mainstage.API.Services
             _gameManager = gameManager;
             _gameActionManager = gameActionManager;
             _hubContext = hubContext;
+            _gameActionService = gameActionService;
         }
 
         public int Roll()
@@ -66,7 +69,7 @@ namespace Mainstage.API.Services
                 {
                     battlerole = parameters["role"];
                 }
-                AddActionHistory(info, playerId, type + "roll", roll.ToString() + (type == "battle" ? ";" + battlerole : string.Empty));
+                _gameActionService.AddActionHistory(info, playerId, type + "roll", roll.ToString() + (type == "battle" ? ";" + battlerole : string.Empty));
             }
 
             var player = info.Game.Players.Where(p => p.PlayerId == playerId).First();
@@ -119,7 +122,7 @@ namespace Mainstage.API.Services
                     {
                         GameId = game.Id,
                         PlayerId = rollInfo.PlayerId,
-                        ActionId = GetNextActionId(info),
+                        ActionId = _gameActionService.GetNextActionId(info),
                         ActionType = "gamestartroll",
                         Parameter = rollInfo.Roll.ToString()
                     };
@@ -142,7 +145,7 @@ namespace Mainstage.API.Services
                         {
                             GameId = game.Id,
                             PlayerId = r.PlayerId,
-                            ActionId = GetNextActionId(info),
+                            ActionId = _gameActionService.GetNextActionId(info),
                             ActionType = "gamestartreroll",
                             Parameter = string.Empty
                         };
@@ -167,7 +170,7 @@ namespace Mainstage.API.Services
                     {
                         GameId = game.Id,
                         PlayerId = turnPlayerId,
-                        ActionId = GetNextActionId(info),
+                        ActionId = _gameActionService.GetNextActionId(info),
                         ActionType = "awaitingperformroll",
                         Parameter = ""
                     });
@@ -190,83 +193,6 @@ namespace Mainstage.API.Services
             else
             {
                 return null;
-            }
-        }
-
-        public int GetNextActionHistoryId(GameStateInfo info)
-        {
-            var newId = info.Game.Actions.Max(a => a.ActionId) + 1;
-            return newId;
-        }
-
-        public int GetNextActionId(GameStateInfo info)
-        {
-            var lastActionId = 0;
-            if (info.ActionSequence != null && info.ActionSequence.Count > 0)
-            {
-                lastActionId = info.ActionSequence.Max(a => a.ActionId);
-            }
-            else if (info.Game.Actions != null && info.Game.Actions.Count > 0)
-            {
-                lastActionId = info.Game.Actions.Max(a => a.ActionId);
-            }
-
-            lastActionId++;
-            return lastActionId;
-        }
-
-        public void AddActionHistory(GameStateInfo info, string playerId, string type, string parameter)
-        {
-            if (info.ActionSequence.Count > 0)
-            {
-                foreach (var action in info.ActionSequence)
-                {
-                    action.ActionId += 1;
-                }
-            }
-
-            var ga = new GameAction()
-            {
-                GameId = info.Game.Id,
-                PlayerId = playerId,
-                ActionId = GetNextActionHistoryId(info),
-                ActionType = type,
-                Parameter = parameter
-            };
-            info.Game.Actions.Add(ga);
-        }
-
-        public void InsertInActionSequence(GameStateInfo info, string playerId, string type, string parameter)
-        {
-            if (info.ActionSequence.Count > 0)
-            {
-                foreach (var action in info.ActionSequence)
-                {
-                    action.ActionId += 1;
-                }
-            }
-            var ga = new GameAction()
-            {
-                GameId = info.Game.Id,
-                PlayerId = playerId,
-                ActionId = GetNextActionHistoryId(info),
-                ActionType = type,
-                Parameter = parameter
-            };
-            info.ActionSequence.Insert(0, ga);
-        }
-
-        public GamePlayer GetNextActionPlayer(GameStateInfo info)
-        {
-            var nextAction = info.ActionSequence.First();
-            if (nextAction == null)
-            {
-                return null;
-            }
-            else
-            {
-                var player = info.Game.Players.Where(p => p.PlayerId == nextAction.PlayerId).First();
-                return player;
             }
         }
 
@@ -395,7 +321,7 @@ namespace Mainstage.API.Services
                     // if player ended up on main stage because of 'All or nothing' card, move to Jeugdhuis stage
                     player.ActiveEffects.Remove("allornothing");
                     car.EventMessage = $"Het optreden van {player.PlayerId} was een grandioze klucht.";
-                    InsertInActionSequence(info, player.PlayerId, "teleport", "24");
+                    _gameActionService.InsertInActionSequence(info, player.PlayerId, "teleport", "24");
                     await ActionSequenceNext(info);
                 }
                 else if (player.Position == 0)
@@ -406,7 +332,7 @@ namespace Mainstage.API.Services
                 else
                 {
                     car.EventMessage = $"Het optreden van {player.PlayerId} was een grandioze klucht.";
-                    InsertInActionSequence(info, player.PlayerId, "teleport", failTileId.ToString());
+                    _gameActionService.InsertInActionSequence(info, player.PlayerId, "teleport", failTileId.ToString());
                     await ActionSequenceNext(info);
                 }
             }
@@ -445,11 +371,11 @@ namespace Mainstage.API.Services
         public async Task PassStage(GameStateInfo info, string playerId)
         {
             var player = info.Game.Players.Where(p => p.PlayerId == playerId).First();
-            AddActionHistory(info, player.PlayerId, "passedperform", player.Position.ToString());
+            _gameActionService.AddActionHistory(info, player.PlayerId, "passedperform", player.Position.ToString());
 
             if (player.Position == 0)
             {
-                InsertInActionSequence(info, playerId, "awaitingmoveroll", string.Empty);
+                _gameActionService.InsertInActionSequence(info, playerId, "awaitingmoveroll", string.Empty);
             }
             else
             {
@@ -458,72 +384,6 @@ namespace Mainstage.API.Services
 
         }
 
-        //public async Task EndPlayerSequence(GameStateInfo info, string playerId)
-        //{
-        //    if (info.ActionSequence.Count == 0)
-        //    {
-        //        await EndTurn(info);
-        //    }
-        //    else
-        //    {
-        //        var isBattleRoll = false;
-        //        var isCollectiveRoll = false;
-        //        var collectiveCardId = 0;
-
-        //        if (info.ChainReaction[0].Type == "battleroll")
-        //        {
-        //            isBattleRoll = true;
-        //        }
-        //        if (info.ChainReaction[0].Type == "collectiveroll")
-        //        {
-        //            isCollectiveRoll = true;
-        //            collectiveCardId = int.Parse(info.ChainReaction[0].Value);
-        //        }
-
-        //        if (info.ChainReaction[0].Type == "fatlady")
-        //        {
-        //            // If player draws fat lady card, he goes back to tile 0, loses all cards and anything that was still queued up
-        //            // for them to happen in the action sequence will not happen anymore
-        //            info.ChainReaction.RemoveAll(c => c.PlayerId == info.ChainReaction[0].PlayerId);
-        //        }
-        //        else
-        //        {
-        //            info.ChainReaction.RemoveAt(0);
-        //        }
-
-        //        if (info.ChainReaction.Count == 0)
-        //        {
-        //            if (isBattleRoll)
-        //            {
-        //                await ResolveBattle(info);
-        //            }
-        //            else if (isCollectiveRoll)
-        //            {
-        //                await _cardService.ResolveCollectiveRoll(info, this, collectiveCardId);
-        //            }
-        //            else
-        //            {
-        //                await EndTurn(info);
-        //            }
-        //        }
-        //        else
-        //        {
-        //            if (isBattleRoll && info.ChainReaction[0].Type != "battleroll")
-        //            {
-        //                await ResolveBattle(info);
-        //            }
-        //            else if (isCollectiveRoll && info.ChainReaction[0].Type != "collectiveroll")
-        //            {
-        //                await _cardService.ResolveCollectiveRoll(info, this, collectiveCardId);
-        //            }
-        //            else
-        //            {
-        //                StartNextChainReactionPart(info);
-        //            }
-
-        //        }
-        //    }
-        //}
 
         public async Task EndTurn(GameStateInfo info)
         {
@@ -553,14 +413,14 @@ namespace Mainstage.API.Services
                 {
                     newPlayer.TurnStartMode = "normal";
                 }
-                AddActionHistory(info, newPlayerId, "startturn", string.Empty);
-                AddActionHistory(info, newPlayerId, "turnskipped", string.Empty);
+                _gameActionService.AddActionHistory(info, newPlayerId, "startturn", string.Empty);
+                _gameActionService.AddActionHistory(info, newPlayerId, "turnskipped", string.Empty);
                 await EndTurn(info); // Repeat EndTurn to move to next player
             }
             else
             {
                 // Get player for next turn, return to client
-                InsertInActionSequence(info, newPlayerId, "startturn", string.Empty);
+                _gameActionService.InsertInActionSequence(info, newPlayerId, "startturn", string.Empty);
                 var car = new ClientActionReport
                 {
                     PlayerId = newPlayerId,
@@ -582,11 +442,11 @@ namespace Mainstage.API.Services
                 switch (nextAction.ActionType)
                 {
                     case "moveforward":
-                        AddActionHistory(info, nextAction.PlayerId, "moveroll", nextAction.Parameter);
+                        _gameActionService.AddActionHistory(info, nextAction.PlayerId, "moveroll", nextAction.Parameter);
                         await ExecuteMove(info, nextAction.PlayerId, "+");
                         break;
                     case "moveforwardbandwagon":
-                        AddActionHistory(info, nextAction.PlayerId, "moveroll", nextAction.Parameter);
+                        _gameActionService.AddActionHistory(info, nextAction.PlayerId, "moveroll", nextAction.Parameter);
                         await ExecuteMove(info, nextAction.PlayerId, "+");
                         var car = new ClientActionReport
                         {
@@ -597,12 +457,12 @@ namespace Mainstage.API.Services
                         info.ClientActionReportQueue.Add(car);
                         break;
                     case "moveforwardandskipstage":
-                        AddActionHistory(info, nextAction.PlayerId, "moveroll", nextAction.Parameter);
+                        _gameActionService.AddActionHistory(info, nextAction.PlayerId, "moveroll", nextAction.Parameter);
                         await ExecuteMove(info, nextAction.PlayerId, "+", true);
                         break;
                     case "movebackward":
                     case "movebackwards":
-                        InsertInActionSequence(info, nextAction.PlayerId, "moveroll", nextAction.Parameter);
+                        _gameActionService.InsertInActionSequence(info, nextAction.PlayerId, "moveroll", nextAction.Parameter);
                         await ExecuteMove(info, nextAction.PlayerId, "-");
                         break;
                     case "zalmtravel":
@@ -610,7 +470,7 @@ namespace Mainstage.API.Services
                         await Teleport(info, nextAction.PlayerId);
                         break;
                     case "teleportnoroll":
-                        AddActionHistory(info, nextAction.PlayerId, "teleport", nextAction.Parameter);
+                        _gameActionService.AddActionHistory(info, nextAction.PlayerId, "teleport", nextAction.Parameter);
                         await Teleport(info, nextAction.PlayerId, true);
                         break;
                     //case "youroll":
@@ -625,7 +485,7 @@ namespace Mainstage.API.Services
                             EventMessage = $"{nextAction.PlayerId} trekt een kaart."
                         };
                         info.ClientActionReportQueue.Add(car);
-                        AddActionHistory(info, nextAction.PlayerId, "carddrawn", drawnCard.Id.ToString());
+                        _gameActionService.AddActionHistory(info, nextAction.PlayerId, "carddrawn", drawnCard.Id.ToString());
                         break;
                     case "drawetherealcard":
                         var card = await _cardManager.GetFirstByName(nextAction.Parameter);
@@ -636,7 +496,7 @@ namespace Mainstage.API.Services
                             EventMessage = $"{nextAction.PlayerId} speelt een kaart..."
                         };
                         info.ClientActionReportQueue.Add(car);
-                        AddActionHistory(info, nextAction.PlayerId, "etherealcarddrawn", card.Id.ToString());
+                        _gameActionService.AddActionHistory(info, nextAction.PlayerId, "etherealcarddrawn", card.Id.ToString());
                         info.LastEtherealCard = card;
                         break;
                     case "reacheddestination":
@@ -671,7 +531,7 @@ namespace Mainstage.API.Services
                 var roll = int.Parse(rollTurnAction.Parameter);
                 var player = info.Game.Players.Where(p => p.PlayerId == rollTurnAction.PlayerId).First();
 
-                AddActionHistory(info, player.PlayerId, "starttile", player.Position.ToString());
+                _gameActionService.AddActionHistory(info, player.PlayerId, "starttile", player.Position.ToString());
 
                 var car = new ClientActionReport
                 {
@@ -712,7 +572,7 @@ namespace Mainstage.API.Services
 
                 }
 
-                AddActionHistory(info, player.PlayerId, "movetotile", player.Position.ToString());
+                _gameActionService.AddActionHistory(info, player.PlayerId, "movetotile", player.Position.ToString());
 
                 // Player reaches target tile
                 await ReachedDestination(info, player.PlayerId);
@@ -732,7 +592,7 @@ namespace Mainstage.API.Services
             // If tile is stage, report this in info object so that player can perform, and do no further checks
             if (IsStage(info, player))
             {
-                InsertInActionSequence(info, playerId, "awaitingperformroll", string.Empty);
+                _gameActionService.InsertInActionSequence(info, playerId, "awaitingperformroll", string.Empty);
                 var car = new ClientActionReport
                 {
                     PlayerId = player.PlayerId,
@@ -750,7 +610,7 @@ namespace Mainstage.API.Services
                 var result = ArrowCheck(info, player); // 0 if no arrow, otherwise tile number of target
                 if (result > 0)
                 {
-                    InsertInActionSequence(info, player.PlayerId, "teleport", result.ToString());
+                    _gameActionService.InsertInActionSequence(info, player.PlayerId, "teleport", result.ToString());
                     await ActionSequenceNext(info);
                     return;
                 }
@@ -767,8 +627,8 @@ namespace Mainstage.API.Services
                     EventMessage = $"Battle tussen {playerId} en {otherPlayerId}. Hoogste worp wint!"
                 };
                 info.ClientActionReportQueue.Add(car);
-                InsertInActionSequence(info, otherPlayerId, "awaitingbattleroll", "defender");
-                InsertInActionSequence(info, playerId, "awaitingbattleroll", "attacker");
+                _gameActionService.InsertInActionSequence(info, otherPlayerId, "awaitingbattleroll", "defender");
+                _gameActionService.InsertInActionSequence(info, playerId, "awaitingbattleroll", "attacker");
                 return;
             }
 
@@ -831,7 +691,7 @@ namespace Mainstage.API.Services
             if (tile.HasCard)
             {
                 var drawnCard = info.Game.DrawPile.First();
-                AddActionHistory(info, player.PlayerId, "carddrawn", drawnCard.Id.ToString());
+                _gameActionService.AddActionHistory(info, player.PlayerId, "carddrawn", drawnCard.Id.ToString());
                 return true;
             }
             return false;
@@ -862,8 +722,8 @@ namespace Mainstage.API.Services
                     EventMessage = $"Gelijke worpen! Gooi opnieuw."
                 };
                 info.ClientActionReportQueue.Add(car);
-                InsertInActionSequence(info, secondLastEntry.PlayerId, "awaitingbattleroll", secondLastRole);
-                InsertInActionSequence(info, lastEntry.PlayerId, "awaitingbattleroll", lastRole);
+                _gameActionService.InsertInActionSequence(info, secondLastEntry.PlayerId, "awaitingbattleroll", secondLastRole);
+                _gameActionService.InsertInActionSequence(info, lastEntry.PlayerId, "awaitingbattleroll", lastRole);
                 return;
             }
             else
@@ -887,12 +747,12 @@ namespace Mainstage.API.Services
                 };
                 info.ClientActionReportQueue.Add(car);
 
-                InsertInActionSequence(info, loserEntry.PlayerId, "movebackwards", loserEntry.Parameter.Split(";")[0]);
+                _gameActionService.InsertInActionSequence(info, loserEntry.PlayerId, "movebackwards", loserEntry.Parameter.Split(";")[0]);
 
                 var winnerRole = winnerEntry.Parameter.Split(";")[1];
                 if (winnerRole == "attacker")
                 {
-                    InsertInActionSequence(info, winnerEntry.PlayerId, "reacheddestination", winnerEntry.Parameter);
+                    _gameActionService.InsertInActionSequence(info, winnerEntry.PlayerId, "reacheddestination", winnerEntry.Parameter);
                 }
 
                 await ActionSequenceNext(info);
@@ -908,7 +768,7 @@ namespace Mainstage.API.Services
             if (card.IsKeeper)
             {
                 player.Cards.Add(card);
-                AddActionHistory(info, playerId, "stashcard", card.Id.ToString());
+                _gameActionService.AddActionHistory(info, playerId, "stashcard", card.Id.ToString());
                 var car = new ClientActionReport
                 {
                     PlayerId = playerId,

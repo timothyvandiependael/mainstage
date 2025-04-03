@@ -50,7 +50,7 @@ namespace Mainstage.API.Managers
             }
         }
 
-        public async Task SaveTurnActionsToDB(Game game, List<TurnHistoryLine> turnActions)
+        public async Task SaveTurnActionsToDB(Game game, List<GameAction> turnActions)
         {
             foreach (var action in turnActions)
             {
@@ -58,8 +58,8 @@ namespace Mainstage.API.Managers
                 {
                     GameId = game.Id,
                     PlayerId = action.PlayerId,
-                    ActionType = action.Name,
-                    Parameter = action.Value,
+                    ActionType = action.ActionType,
+                    Parameter = action.Parameter,
                     LcDate = DateTime.Now,
                     CrDate = DateTime.Now,
                     LcUser = "sys",

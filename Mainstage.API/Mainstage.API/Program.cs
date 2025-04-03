@@ -89,6 +89,7 @@ builder.Services.AddScoped<UserManager>();
 builder.Services.AddScoped<ChatMessageManager>();
 builder.Services.AddScoped<GameOptionsManager>();
 
+builder.Services.AddScoped<GameActionService>();
 builder.Services.AddScoped<AuthService>();
 builder.Services.AddScoped<CardService>();
 builder.Services.AddScoped<GameLogicService>();
