@@ -35,6 +35,7 @@ export class LobbyComponent {
   private gameCreatedSub?: Subscription;
   private getMessagesForChatSub?: Subscription;
   private getOpenPublicGamesSub?: Subscription;
+  private isAlreadyInGameSub?: Subscription;
 
   constructor(
     private lobbyHubService: LobbyHubService, 
@@ -51,58 +52,60 @@ export class LobbyComponent {
   }
 
   ngOnInit() {
-    debugger;
+
     this.loadingService.show('lobby-chat');
     this.loadingService.show('lobby-games');
 
     this.authService.checkIfLoggedIn();
 
-    this.lobbyHubService.startLobbyConnection();
+    this.lobbyHubService.startLobbyConnection(() => {
+      this.lobbyHubService.isAlreadyInGame();
 
-    this.gameUpdatesSub?.unsubscribe();
-    this.gameUpdatesSub = this.lobbyHubService.getGameUpdates().subscribe((gameUpdates: any[]) => {
-        console.log('sub games');
-        console.log(gameUpdates);
-        this.openGames = gameUpdates;
-        //this.cdr.detectChanges();
-    })
-
-    this.chatUpdatesSub?.unsubscribe();
-    this.chatUpdatesSub = this.lobbyHubService.getChatUpdates().subscribe((chatMessages: any[]) => {
-        this.messages = chatMessages;
-        this.cdr.detectChanges();
-        this.scrollChatToBottom();
-    })
-
-    this.gameCreatedSub?.unsubscribe();
-    this.gameCreatedSub = this.lobbyHubService.onGameCreated().subscribe(( game: any) => { })
-
-    this.getMessagesForChatSub?.unsubscribe();
-    this.getMessagesForChatSub = this.chatMessageService.getMessagesForChat(0, 500).subscribe({
-      next: (data) => {
-        this.messages = data;
-        this.cdr.detectChanges();
-        this.scrollChatToBottom();
-        this.loadingService.hide('lobby-chat');
-      },
-      error: (err) => {
-        console.log('Fout bij het ophalen van de chatberichten: ', err);
-      }
-    })
-
-    this.getOpenPublicGamesSub?.unsubscribe();
-    this.getOpenPublicGamesSub = this.gameService.getOpenPublicGames().subscribe({
-      next: (data) => {
-        console.log('game updates on component load');
-        console.log(data);
-        this.openGames = data;
-        this.cdr.detectChanges();
-        this.loadingService.hide('lobby-games');
-      },
-      error: (err) => {
-        console.error('Fout bij het ophalen van open games', err);
-      }
-    })
+      this.gameUpdatesSub?.unsubscribe();
+      this.gameUpdatesSub = this.lobbyHubService.getGameUpdates().subscribe((gameUpdates: any[]) => {
+          console.log('sub games');
+          console.log(gameUpdates);
+          this.openGames = gameUpdates;
+          //this.cdr.detectChanges();
+      })
+  
+      this.chatUpdatesSub?.unsubscribe();
+      this.chatUpdatesSub = this.lobbyHubService.getChatUpdates().subscribe((chatMessages: any[]) => {
+          this.messages = chatMessages;
+          this.cdr.detectChanges();
+          this.scrollChatToBottom();
+      })
+  
+      this.gameCreatedSub?.unsubscribe();
+      this.gameCreatedSub = this.lobbyHubService.onGameCreated().subscribe(( game: any) => { })
+  
+      this.getMessagesForChatSub?.unsubscribe();
+      this.getMessagesForChatSub = this.chatMessageService.getMessagesForChat(0, 500).subscribe({
+        next: (data) => {
+          this.messages = data;
+          this.cdr.detectChanges();
+          this.scrollChatToBottom();
+          this.loadingService.hide('lobby-chat');
+        },
+        error: (err) => {
+          console.log('Fout bij het ophalen van de chatberichten: ', err);
+        }
+      })
+  
+      this.getOpenPublicGamesSub?.unsubscribe();
+      this.getOpenPublicGamesSub = this.gameService.getOpenPublicGames().subscribe({
+        next: (data) => {
+          console.log('game updates on component load');
+          console.log(data);
+          this.openGames = data;
+          this.cdr.detectChanges();
+          this.loadingService.hide('lobby-games');
+        },
+        error: (err) => {
+          console.error('Fout bij het ophalen van open games', err);
+        }
+      })
+    });
   }
 
   ngOnDestroy() {
@@ -142,9 +145,7 @@ export class LobbyComponent {
   }
 
   joinGame(game: any) {
-    this.gameService.setCurrentGame(game);
-    debugger;
-    
+    this.gameService.setCurrentGame(game);  
     this.router.navigate(['/game-lobby']);
   }
 

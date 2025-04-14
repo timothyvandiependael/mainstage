@@ -26,7 +26,7 @@ export class LobbyHubService {
 
   }
 
-  startLobbyConnection() {
+  startLobbyConnection(callback: () => void) {
     const token = this.authService.getToken();
 
     this.hubConnection = new signalR.HubConnectionBuilder()
@@ -56,12 +56,13 @@ export class LobbyHubService {
       .start()
       .then(() => {
         console.log("SignalR connection established");
-        debugger;
+
         const lastUserId = localStorage.getItem('lastUserId');
         if (lastUserId) {
           this.hubConnection?.send('Reconnect');
           localStorage.removeItem('lastUserId');
         }
+        callback();
       })
       .catch(err => console.error('Error while starting signalR connection: ' + err));
   }
@@ -81,8 +82,6 @@ export class LobbyHubService {
     this.hubConnection?.on('NavigateToGameScreen', (game) => {
       console.log("Navigating to game screen for game", game.name);
       if (game != null) {
-        this.gameService.setCurrentGame(game);
-        game = null;
         this.router.navigate(['/game-lobby']);
       }
       this.onGameCreatedSource.next(game);
@@ -105,6 +104,23 @@ export class LobbyHubService {
       this.chatUpdatesSource.next(chatMessages);
     });
     return this.chatUpdates$;
+  }
+
+  isAlreadyInGame() {
+    this.hubConnection?.invoke('IsAlreadyInGame')
+      .then((game) => { 
+        console.log('Is Already In Game Request sent to lobby hub.') 
+        debugger;
+        if (game && game.id > 0) {
+          if (game.state == 'open') {
+            this.router.navigate(['/game-lobby']);
+          }
+          else if (game.state == 'ongoing') {
+            this.router.navigate(['/game']);
+          }
+        }
+      })
+      .catch(err => console.error('Error sending already in game check to lobby hub: ', err));
   }
 
   sendLobbyMessage(message: string) {

@@ -26,4 +26,15 @@ export class GameService {
       return JSON.parse(raw);
     return '';
   }
+
+  getGameFromServer(playerId: string, game: any): Observable<any> {
+
+    if (game != '') {
+      return this.http.get(`${this.apiUrl}/getgame?id=` + game.id);
+    }
+    else {
+      return this.http.get(`${this.apiUrl}/getgameforplayer?playerId=` + playerId);
+    }
+   
+  }
 }

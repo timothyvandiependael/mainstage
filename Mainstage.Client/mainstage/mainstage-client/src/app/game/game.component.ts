@@ -39,6 +39,8 @@ export class GameComponent {
   cardText: string = '';
   aboutToPlayEtherealCard: boolean = false;
 
+  testMode: boolean = true;
+
   @ViewChildren('diceCanvas') diceCanvases!: QueryList<ElementRef<HTMLCanvasElement>>;
 
   private diceSpritesheet = new Image();
@@ -56,6 +58,7 @@ export class GameComponent {
   private onPlayerActionProcessedSub?: Subscription;
   private giveInterruptchanceSub?: Subscription;
   private showCardToEveryoneSub?: Subscription;
+  private getGameFromServerSub?: Subscription;
 
   constructor(
     private gameService: GameService,
@@ -64,7 +67,38 @@ export class GameComponent {
     private authService: AuthService,
     private cardService: CardService
   ) {
+  }
 
+  ngOnDestroy() {
+    this.onDieRollSub?.unsubscribe();
+    this.onGameStartDieRollsProcessedSub?.unsubscribe();
+    this.onPlayerActionProcessedSub?.unsubscribe();
+    this.giveInterruptchanceSub?.unsubscribe();
+    this.showCardToEveryoneSub?.unsubscribe();
+    this.getGameFromServerSub?.unsubscribe();
+  }
+
+  ngOnInit() {
+    this.game = this.gameService.getCurrentGame();
+
+    var userId = this.authService.getUserId();
+    if (userId) {
+      this.userId = userId;
+    }
+
+    this.getGameFromServerSub?.unsubscribe();
+    this.getGameFromServerSub = this.gameService.getGameFromServer(this.userId, this.game).subscribe({
+      next: (data) => {
+        this.game = data;
+        this.initAfterLoadingGame();
+      },
+      error: (err) => {
+        console.error('Failed to load game from server: ', err);
+      }
+    })
+  }
+
+  initDice() {
     this.diceSpritesheet.src = 'assets/dice.png';
     this.generateValidFrames();
     this.diceSpritesheet.onload = () => {
@@ -73,116 +107,127 @@ export class GameComponent {
     }
   }
 
-  ngOnInit() {
-    this.game = this.gameService.getCurrentGame();
-    var userId = this.authService.getUserId();
-    if (userId) {
-      this.userId = userId;
-      this.userIndex = this.game.players.findIndex((p: any) => p.playerId === userId);
-    }
-
-
+  initAfterLoadingGame() {
+    this.userIndex = this.game.players.findIndex((p: any) => p.playerId === this.userId);
+    this.initDice();
     this.gameHubService.startConnection(() => {
-      this.onDieRollSub?.unsubscribe();
-      this.onDieRollSub = this.gameHubService.onDieroll().subscribe((data) => {
-        if (data) {
-          this.showDiceRoll(data.playerId, data.roll, (playerId, roll) => {
-            if (data.playerId == this.userId) {
-              if (this.game.state == "started") {
-                this.gameHubService.processGameStartDieRoll(this.game.id, playerId, roll);
-              }
+      this.initializeOnDieRoll();
+      this.initializeOnGameStartDieRollProcessed();
+      this.initializeOnPlayerActionProcessed();
+      this.initializeShowCardsToEveryone();
+      this.initializeGiveInterruptChance();
 
-              if (this.game.state == "ongoing") {
-                var parameters = { "roll": roll.toString() };
-                this.gameStateInfo.game = this.game;
-                this.gameHubService.processPlayerAction(this.gameStateInfo, this.currentRollType, parameters);
-              }
+      this.gameHubService.addToGroup(this.game.id);
+
+      if (this.game.state == "started") {
+        this.eventTextQueue.push('Rol om te beslissen wie begint.');
+        this.game.players.forEach((p: any, index: number) => {
+          this.rollEnabled[index] = true;
+        });
+      }
+      debugger;
+      this.initializeGameBoard();
+    });
+  }
+
+  initializeOnDieRoll() {
+    this.onDieRollSub?.unsubscribe();
+    this.onDieRollSub = this.gameHubService.onDieroll().subscribe((data) => {
+      if (data) {
+        this.showDiceRoll(data.playerId, data.roll, (playerId, roll) => {
+          if (data.playerId == this.userId) {
+            if (this.game.state == "started") {
+              this.gameHubService.processGameStartDieRoll(this.game.id, playerId, roll);
             }
-          });
-        }
-      });
 
-      this.onGameStartDieRollsProcessedSub?.unsubscribe();
-      this.onGameStartDieRollsProcessedSub = this.gameHubService.onGameStartDieRollsProcessed().subscribe((model) => {
-        if (model) {
-          this.game = model.game;
-          this.eventTextQueue.push(model.eventMessage);
-          this.gameStateInfo = model;
-
-          if (model.actionSequence && model.actionSequence.length > 0) {
-
-            var rerollActions = model.actionSequence.filter((a: any) => a.actionType == 'gamestartreroll');
-            if (rerollActions.length > 0) {
-              rerollActions.forEach((a: any, i: number) => {
-                if (a.actionType == 'gamestartreroll' && a.playerId == this.userId) {
-                  this.rollEnabled[this.userIndex] = true;
-                  this.game.actions.push(a);
-                }
-
-              });
-            }
-            else {
-              var startTurnActions = model.actionSequence.filter((a: any) => a.actionType == "awaitingperformroll");
-              if (startTurnActions.length > 0) {
-                this.turnPlayerId = startTurnActions[0].playerId;
-                this.currentRollType = 'perform';
-                if (this.turnPlayerId == this.userId) {
-                  this.hasTurn = true;
-                  this.rollEnabled[this.userIndex] = true;
-                }
-              }
+            if (this.game.state == "ongoing") {
+              var parameters = { "roll": roll.toString() };
+              this.gameStateInfo.game = this.game;
+              this.gameHubService.processPlayerAction(this.gameStateInfo, this.currentRollType, parameters);
             }
           }
-        }
-      })
+        });
+      }
+    });
+  }
 
-      this.onPlayerActionProcessedSub?.unsubscribe();
-      this.onPlayerActionProcessedSub = this.gameHubService.onPlayerActionProcessed().subscribe((data: any) => {
-        if (data) {
-          this.gameStateInfo = data;
-          this.game = this.gameStateInfo.game;
+  initializeOnGameStartDieRollProcessed() {
+    this.onGameStartDieRollsProcessedSub?.unsubscribe();
+    this.onGameStartDieRollsProcessedSub = this.gameHubService.onGameStartDieRollsProcessed().subscribe((model) => {
+      if (model) {
+        this.game = model.game;
+        this.eventTextQueue.push(model.eventMessage);
+        this.gameStateInfo = model;
 
-          if (data.clientActionReportQueue && data.clientActionReportQueue.length > 0) {
-            data.clientActionReportQueue.forEach((car: any, index: number) => {
-              this.processClientActionQueueEntry(car, index);
+        if (model.actionSequence && model.actionSequence.length > 0) {
+
+          var rerollActions = model.actionSequence.filter((a: any) => a.actionType == 'gamestartreroll');
+          if (rerollActions.length > 0) {
+            rerollActions.forEach((a: any, i: number) => {
+              if (a.actionType == 'gamestartreroll' && a.playerId == this.userId) {
+                this.rollEnabled[this.userIndex] = true;
+                this.game.actions.push(a);
+              }
+
             });
-
-            data.clientActionReportQueue = [];
+          }
+          else {
+            var startTurnActions = model.actionSequence.filter((a: any) => a.actionType == "awaitingperformroll");
+            if (startTurnActions.length > 0) {
+              this.turnPlayerId = startTurnActions[0].playerId;
+              this.currentRollType = 'perform';
+              if (this.turnPlayerId == this.userId) {
+                this.hasTurn = true;
+                this.rollEnabled[this.userIndex] = true;
+              }
+            }
           }
         }
-      });
+      }
+    })
+  }
 
-      this.showCardToEveryoneSub?.unsubscribe();
-      this.showCardToEveryoneSub = this.gameHubService.showCardToEveryone().subscribe((data: any) => {
-        if (data) {
-          this.showCardButtons = false;
-          this.showStashButton = false;
-          var showCardString = data.card.name.toUpperCase() + ': ' + data.card.description;
-          if (data.jokerCard && data.jokerCards != '') {
-            showCardString += " : Gekozen kaart: " + data.jokerCard;
-          }
-          this.showCard(showCardString, true);
+  initializeOnPlayerActionProcessed() {
+    this.onPlayerActionProcessedSub?.unsubscribe();
+    this.onPlayerActionProcessedSub = this.gameHubService.onPlayerActionProcessed().subscribe((data: any) => {
+      if (data) {
+        this.gameStateInfo = data;
+        this.game = this.gameStateInfo.game;
+
+        if (data.clientActionReportQueue && data.clientActionReportQueue.length > 0) {
+          data.clientActionReportQueue.forEach((car: any, index: number) => {
+            this.processClientActionQueueEntry(car, index);
+          });
+
+          data.clientActionReportQueue = [];
         }
-      });
+      }
+    });
+  }
 
-      this.giveInterruptchanceSub?.unsubscribe();
+  initializeShowCardsToEveryone() {
+    this.showCardToEveryoneSub?.unsubscribe();
+    this.showCardToEveryoneSub = this.gameHubService.showCardToEveryone().subscribe((data: any) => {
+      if (data) {
+        this.showCardButtons = false;
+        this.showStashButton = false;
+        var showCardString = data.card.name.toUpperCase() + ': ' + data.card.description;
+        if (data.jokerCard && data.jokerCards != '') {
+          showCardString += " : Gekozen kaart: " + data.jokerCard;
+        }
+        this.showCard(showCardString, true);
+      }
+    });
+  }
+
+  initializeGiveInterruptChance() {
+    this.giveInterruptchanceSub?.unsubscribe();
       this.giveInterruptchanceSub = this.gameHubService.giveInterruptChance().subscribe((data: any) => {
         if (data) {
           // TODO : player cards that are applicable will get highlighted for easy playing?
           // For example nope cards can not be played on other nope cards, oh jawel can only be played on nope, bandwagon can only be played on a move etc
         }
       });
-
-      this.gameHubService.addToGroup(this.game.id);
-    });
-
-    if (this.game.state == "started") {
-      this.initializeGameBoard();
-      this.eventTextQueue.push('Rol om te beslissen wie begint.');
-      this.game.players.forEach((p: any, index: number) => {
-        this.rollEnabled[index] = true;
-      });
-    }
   }
 
   activateRollIfCurrentUser(playerId: string, rollType: string) {
@@ -272,10 +317,10 @@ export class GameComponent {
         this.drawService.teleportPawn(this.ctx, index, 0, this.tileSize, this.game.tiles, this.game.players);
       })
 
-      // TODO: reflect card loss on UI
+      // TODO: reflect card loss visualization
     }
     else if (entry.type == "losecards") {
-      // TODO: reflect card loss on UI
+      // TODO: reflect card loss visualization
     }
     else if (entry.type == "passcards") {
       // TODO: visualization of the passing of cards
@@ -604,6 +649,7 @@ export class GameComponent {
     canvas.width = this.tileSize * 16;
     canvas.height = this.tileSize * 22;
     this.ctx = canvas.getContext('2d')!;
+    debugger;
     this.drawService.drawGameBoard(this.ctx, this.tileSize, this.game.tiles);
     this.drawService.drawPawns(this.ctx, this.tileSize, this.game.players, this.game.tiles);
   }

@@ -38,6 +38,13 @@ namespace Mainstage.API.Controllers
             return Ok(game);
         }
 
+        [HttpGet("getgameforplayer")]
+        public async Task<ActionResult<Game>> GetGameForPlayer(string playerId)
+        {
+            var game = await _gameManager.GetActiveGameForPlayerAsync(playerId);
+            return game;
+        }
+
         [HttpGet("getallopenpublicgames")] 
         public async Task<ActionResult<List<Game>>> GetAllOpenPublicGames()
         {

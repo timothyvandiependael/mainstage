@@ -30,6 +30,18 @@ namespace Mainstage.API.Managers
             return await _context.GamePlayers.FindAsync(gameId, playerId);
         }
 
+        public async Task<Game> GetActiveGame(string playerId)
+        {
+            var gamePlayer = await _context.GamePlayers.FirstOrDefaultAsync(p => p.PlayerId == playerId);
+            if (gamePlayer != null)
+            {
+                var game = await _context.Games.FirstOrDefaultAsync(g => g.Id == gamePlayer.GameId);
+                if (game != null)
+                    return game;
+            }
+            return null;
+        }
+
         public async Task AddAsync(GamePlayer entity)
         {
             try
@@ -42,7 +54,7 @@ namespace Mainstage.API.Managers
                 var x = ex;
                 throw;
             }
-            
+
         }
 
         public async Task UpdateAsync(GamePlayer entity)

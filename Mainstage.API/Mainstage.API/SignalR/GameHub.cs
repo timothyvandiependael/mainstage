@@ -19,6 +19,7 @@ namespace Mainstage.API.SignalR
         private readonly GameLogicService _gameLogicService;
         private readonly CardService _cardService;
         private readonly CardManager _cardManager;
+        private readonly GameActionService _gameActionService;
         public GameHub(
             ChatMessageManager chatMessageManager, 
             GameManager gameManager, 
@@ -26,7 +27,8 @@ namespace Mainstage.API.SignalR
             GamePlayerManager gamePlayerManager, 
             GameLogicService gameLogicService,
             CardService cardService,
-            CardManager cardManager
+            CardManager cardManager,
+            GameActionService gameActionService
             )
         {
             _chatMessageManager = chatMessageManager;
@@ -36,6 +38,7 @@ namespace Mainstage.API.SignalR
             _gameLogicService = gameLogicService;
             _cardService = cardService;
             _cardManager = cardManager;
+            _gameActionService = gameActionService;
         }
 
         public async Task AddToGroup(int gameId)
@@ -178,6 +181,10 @@ namespace Mainstage.API.SignalR
 
             try
             {
+                // TODO: use signal to pause game for everyone with countdown for disconnection
+                // This way player does not lose any interrupt chances
+                // Reset game to start of last action for everyone? To be tried and tested
+
                 /*await Task.Delay(TimeSpan.FromSeconds(60), cts.Token);
                 var games = await _gameManager.GetUnfinishedForPlayerAsync(userId);
                 foreach (var game in games)
@@ -255,7 +262,7 @@ namespace Mainstage.API.SignalR
                     info.ActionSequence.Remove(awaitPerformRollAction);
                 }
                 await _gameLogicService.ProcessRoll(info, playerId, type, parameters);
-                _gameLogicService.InsertInActionSequence(info, playerId, type, parameters["roll"]);
+                _gameActionService.InsertInActionSequence(info, playerId, type, parameters["roll"]);
                 await _gameLogicService.Perform(info);
             }
             else if (type == "move")
@@ -270,7 +277,7 @@ namespace Mainstage.API.SignalR
                 var interrupted = await IsInterrupted(info, playerId, "move", string.Empty);
                 if (!interrupted)
                 {
-                    _gameLogicService.InsertInActionSequence(info, playerId, type, parameters["roll"]);
+                    _gameActionService.InsertInActionSequence(info, playerId, type, parameters["roll"]);
                     await _gameLogicService.ExecuteMove(info, playerId, "+");
                 }    
             }
@@ -322,7 +329,7 @@ namespace Mainstage.API.SignalR
             else if (type == "playcard")
             {
                 var card = await _cardManager.GetByIdAsync(int.Parse(parameters["cardid"]));
-                _gameLogicService.AddActionHistory(info, playerId, "playcard", card.Id.ToString());
+                _gameActionService.AddActionHistory(info, playerId, "playcard", card.Id.ToString());
                 var jokerCard = string.Empty;
                 if (card.Id == 73) // joker
                 {
@@ -336,7 +343,7 @@ namespace Mainstage.API.SignalR
                 }
                 else
                 {
-                    _gameLogicService.AddActionHistory(info, playerId, "cardinterrupted", card.Id.ToString());
+                    _gameActionService.AddActionHistory(info, playerId, "cardinterrupted", card.Id.ToString());
                     await _gameLogicService.DiscardCard(info, playerId, parameters);
                 }
                 

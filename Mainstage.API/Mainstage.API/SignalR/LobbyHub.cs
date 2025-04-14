@@ -12,13 +12,19 @@ namespace Mainstage.API.SignalR
         private readonly ChatMessageManager _chatMessageManager;
         private readonly GameManager _gameManager;
         private readonly GameOptionsManager _gameOptionsManager;
+        private readonly GamePlayerManager _gamePlayerManager;
         private static readonly Dictionary<string, string> _userConnections = new();
         private static Dictionary<string, CancellationTokenSource> _disconnectTimers = new();
-        public LobbyHub(ChatMessageManager chatMessageManager, GameManager gameManager, GameOptionsManager gameOptionsManager)
+        public LobbyHub(
+            ChatMessageManager chatMessageManager, 
+            GameManager gameManager, 
+            GameOptionsManager gameOptionsManager,
+            GamePlayerManager gamePlayerManager)
         {
             _chatMessageManager = chatMessageManager;
             _gameManager = gameManager;
             _gameOptionsManager = gameOptionsManager;
+            _gamePlayerManager = gamePlayerManager;
         }
 
         public async Task SendMessage(string message)
@@ -37,6 +43,15 @@ namespace Mainstage.API.SignalR
             await _chatMessageManager.AddAsync(chatMessage);
             var allMessages = await _chatMessageManager.GetForChatAsync(0);
             await Clients.All.SendAsync("ReceiveChatMessages", allMessages);
+        }
+
+        public async Task<Game> IsAlreadyInGame()
+        {
+            var user = Context.User?.Identity?.Name;
+            var game = await _gamePlayerManager.GetActiveGame(user);
+            if (game != null)
+                return game;
+            return new Game();
         }
 
         public async Task CreateGame(GameOptions gameOptions)
@@ -78,7 +93,6 @@ namespace Mainstage.API.SignalR
             var openGames = await _gameManager.GetAllOpenPublicAsync();
             try
             {
-                Console.WriteLine($"User: {Context.User?.Identity?.Name}, ConnectionId: {Context.ConnectionId}");
                 await Clients.Client(_userConnections[Context.User?.Identity?.Name]).SendAsync("NavigateToGameScreen", game);
                 await Clients.All.SendAsync("ReceiveGameUpdates", openGames);
             }

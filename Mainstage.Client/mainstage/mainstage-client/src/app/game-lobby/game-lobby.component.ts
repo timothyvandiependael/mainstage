@@ -36,6 +36,7 @@ export class GameLobbyComponent {
   private onPlayerLeftSub?: Subscription;
   private onGameCancelledSub?: Subscription;
   private onGameStartedSub?: Subscription;
+  private getGameFromServerSub?: Subscription;
 
   constructor(
     private gameService: GameService,
@@ -56,94 +57,107 @@ export class GameLobbyComponent {
     this.loadingService.show('game-lobby-game-detail');
     this.loadingService.show('game-lobby-chat');
 
-    this.game = this.gameService.getCurrentGame();
+    var retrievedUser = this.authService.getUserId();
+    if (retrievedUser == null) {
+      this.router.navigate(['/login']);
+    }
+    else {
+      this.userId = retrievedUser;
+
+      this.game = this.gameService.getCurrentGame();
+      this.getGameFromServerSub?.unsubscribe();
+      this.getGameFromServerSub = this.gameService.getGameFromServer(this.userId, this.game).subscribe({
+        next: (data) => {
+          this.game = data;
+          this.initAfterLoadingGame();
+        },
+        error: (err) => {
+          console.error('Failed to load game from server: ', err);
+        }
+      })
+    }
+  }
+
+  initAfterLoadingGame() {
     if (this.game == null) {
       this.router.navigate(['/lobby']);
     }
     else {
-      var retrievedUser = this.authService.getUserId();
-      if (retrievedUser == null) {
-        this.router.navigate(['/login']);
+      if (this.userId == this.game.crUser) {
+        this.isCreator = true;
+        this.currentPlayerAmount = this.game.players.length;
+        this.loadingService.hide('game-lobby-game-detail');
       }
-      else {
-        this.userId = retrievedUser;
 
-        if (this.userId == this.game.crUser) {
-          this.isCreator = true;
-          this.currentPlayerAmount = this.game.players.length;
-          this.loadingService.hide('game-lobby-game-detail');
+      this.gameHubService.startConnection(() => {
+        if (this.userId != this.game.crUser) {
+          this.gameHubService.joinGame(this.game);
+        }
+        else {
+          this.gameHubService.addToGroup(this.game.id);
         }
 
-        this.gameHubService.startConnection(() => {
-          if (this.userId != this.game.crUser) {
-            this.gameHubService.joinGame(this.game);
+        this.onPlayerJoinedSub?.unsubscribe();
+        this.onPlayerJoinedSub = this.gameHubService.onPlayerJoined().subscribe((data) => {
+          if (data) {
+            this.game = data.game;
+            this.gameService.setCurrentGame(data.game);
+            this.currentPlayerAmount = this.game.players.length;
+            this.loadingService.hide('game-lobby-game-detail');
+            if (!this.isCreator) this.loadingService.hide('game-lobby-chat');
+            this.cdr.detectChanges();
+            this.scrollChatToBottom();
           }
-          else {
-            this.gameHubService.addToGroup(this.game.id);
-          }
-
-          this.onPlayerJoinedSub?.unsubscribe();
-          this.onPlayerJoinedSub = this.gameHubService.onPlayerJoined().subscribe((data) => {
-            if (data) {
-              this.game = data.game;
-              this.gameService.setCurrentGame(data.game);
-              this.currentPlayerAmount = this.game.players.length;
-              this.loadingService.hide('game-lobby-game-detail');
-              if (!this.isCreator) this.loadingService.hide('game-lobby-chat');
-              this.cdr.detectChanges();
-              this.scrollChatToBottom();
-            }
-          });
-
-          this.onMessagesReceivedSub?.unsubscribe();
-          this.onMessagesReceivedSub = this.gameHubService.onMessagesReceived().subscribe((chatMessages: any[]) => {
-            debugger;
-            if (chatMessages) {
-              this.messages = chatMessages;
-              this.cdr.detectChanges();
-              this.scrollChatToBottom();
-
-            }
-          })
-
-          this.getMessagesForChatSub?.unsubscribe();
-          this.getMessagesForChatSub = this.getMessagesForChatSub = this.chatMessageService.getMessagesForChat(this.game.id, 500).subscribe({
-            next: (data) => {
-              if (data) {
-                this.messages = data;
-                if (this.isCreator) this.loadingService.hide('game-lobby-chat');
-                this.cdr.detectChanges();
-                this.scrollChatToBottom();
-              }
-            },
-            error: (err) => {
-              console.log('Fout bij het ophalen van de chatberichten: ', err);
-            }
-          })
-
-          this.onPlayerLeftSub?.unsubscribe();
-          this.onPlayerLeftSub = this.gameHubService.onPlayerLeft().subscribe((data: any) => {
-            if (data) {
-              this.game = data.game;
-              this.gameService.setCurrentGame(data.game);
-              this.currentPlayerAmount = this.game.players.length;
-              this.cdr.detectChanges();
-              this.scrollChatToBottom();
-            }
-            
-          })
-
-          this.onGameStartedSub?.unsubscribe();
-          this.onGameStartedSub = this.gameHubService.onGameStarted().subscribe((game: any) => {
-
-          });
-
-          this.onGameCancelledSub?.unsubscribe();
-          this.onGameCancelledSub = this.gameHubService.onGameCancelled().subscribe((game: any) => {
-          })
         });
 
-      }
+        this.onMessagesReceivedSub?.unsubscribe();
+        this.onMessagesReceivedSub = this.gameHubService.onMessagesReceived().subscribe((chatMessages: any[]) => {
+          debugger;
+          if (chatMessages) {
+            this.messages = chatMessages;
+            this.cdr.detectChanges();
+            this.scrollChatToBottom();
+
+          }
+        })
+
+        this.getMessagesForChatSub?.unsubscribe();
+        this.getMessagesForChatSub = this.getMessagesForChatSub = this.chatMessageService.getMessagesForChat(this.game.id, 500).subscribe({
+          next: (data) => {
+            if (data) {
+              this.messages = data;
+              if (this.isCreator) this.loadingService.hide('game-lobby-chat');
+              this.cdr.detectChanges();
+              this.scrollChatToBottom();
+            }
+          },
+          error: (err) => {
+            console.log('Fout bij het ophalen van de chatberichten: ', err);
+          }
+        })
+
+        this.onPlayerLeftSub?.unsubscribe();
+        this.onPlayerLeftSub = this.gameHubService.onPlayerLeft().subscribe((data: any) => {
+          if (data) {
+            this.game = data.game;
+            this.gameService.setCurrentGame(data.game);
+            this.currentPlayerAmount = this.game.players.length;
+            this.cdr.detectChanges();
+            this.scrollChatToBottom();
+          }
+
+        })
+
+        this.onGameStartedSub?.unsubscribe();
+        this.onGameStartedSub = this.gameHubService.onGameStarted().subscribe((game: any) => {
+
+        });
+
+        this.onGameCancelledSub?.unsubscribe();
+        this.onGameCancelledSub = this.gameHubService.onGameCancelled().subscribe((game: any) => {
+        })
+      });
+
     }
   }
 
@@ -153,6 +167,7 @@ export class GameLobbyComponent {
     this.getMessagesForChatSub?.unsubscribe();
     this.onPlayerLeftSub?.unsubscribe();
     this.onGameCancelledSub?.unsubscribe();
+    this.getGameFromServerSub?.unsubscribe();
   }
 
   @HostListener('window:beforeunload', ['$event'])
@@ -174,7 +189,7 @@ export class GameLobbyComponent {
       this.newMessage = '';
       this.scrollChatToBottom();
     }
-    
+
   }
 
   scrollChatToBottom() {

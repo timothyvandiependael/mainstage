@@ -267,6 +267,20 @@ namespace Mainstage.API.Managers
             return games;
         }
 
+        public async Task<Game> GetActiveGameForPlayerAsync(string playerId)
+        {
+            var game = await (
+
+                from p in _context.GamePlayers
+                join g in _context.Games on p.GameId equals g.Id
+                where g.State == "open" || g.State == "ongoing"
+                select g
+
+                ).FirstOrDefaultAsync();
+            await GetAdditionalGameElementsAsync(game);
+            return game;
+        }
+
         public async Task SaveGameStateToDB(Game game)
         {
             await UpdateAsync(game);
