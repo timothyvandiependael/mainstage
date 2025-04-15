@@ -3,6 +3,7 @@ using Mainstage.API.Models;
 using Mainstage.API.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.SignalR;
+using System.Numerics;
 using System.Threading.Tasks;
 
 namespace Mainstage.API.SignalR
@@ -39,11 +40,6 @@ namespace Mainstage.API.SignalR
             _cardService = cardService;
             _cardManager = cardManager;
             _gameActionService = gameActionService;
-        }
-
-        public async Task AddToGroup(int gameId)
-        {
-            await Groups.AddToGroupAsync(Context.ConnectionId, gameId.ToString());
         }
 
         public async Task JoinGame(Game game)
@@ -151,6 +147,24 @@ namespace Mainstage.API.SignalR
             await Clients.Group(gameId.ToString()).SendAsync("ReceiveMessages", allMessages);
         }
 
+        public async Task AddToGroup(int gameId)
+        {
+            await Groups.AddToGroupAsync(Context.ConnectionId, gameId.ToString());
+
+            var everyoneConnected = true;
+            var game = await _gameManager.GetByIdAsync(gameId);
+            foreach (var player in game.Players)
+            {
+                if (!_userConnections.ContainsKey(player.PlayerId))
+                {
+                    everyoneConnected = false;
+                    break;
+                }
+            }
+
+            await Clients.Group(gameId.ToString()).SendAsync("IsEveryoneConnected", everyoneConnected);
+        }
+
         public override async Task OnConnectedAsync()
         {
             var userId = Context.User?.Identity?.Name;
@@ -178,6 +192,12 @@ namespace Mainstage.API.SignalR
             var userId = Context.User?.Identity?.Name;
             var cts = new CancellationTokenSource();
             _disconnectTimers[userId] = cts;
+
+            var games = await _gameManager.GetUnfinishedForPlayerAsync(userId);
+            foreach (var game in games)
+            {
+                await Clients.Group(game.Id.ToString()).SendAsync("IsEveryoneConnected", false);
+            }
 
             try
             {

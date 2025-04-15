@@ -23,6 +23,10 @@
         <button>Settings</button>
     </div>
 
+    <div *ngIf="gamePaused" class="pause-overlay">
+        <div class="pause-message">⏸ Wachten op andere spelers...</div>
+    </div>
+
     <div class="screen-layout">
         <div class="game-layout">
             <div class="game-column player-column">
@@ -34,7 +38,7 @@
 
                 <div *ngFor="let player of game.players; let i = index" class="player player-left"
                     [ngClass]="{ 'active-player': turnPlayerId == player.playerId}">
-                    <span class="player-name">{{player.playerId}}</span>
+                    <span class="player-name" [ngStyle]="{'color': playerColors[i]}">{{player.playerId}}</span>
                     <div class="player-data">
                         <div class="player-cards">Cards</div>
                         <canvas #diceCanvas width="46" height="46" (click)="rollDice(i, true)"

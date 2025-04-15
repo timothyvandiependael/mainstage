@@ -1,16 +1,17 @@
-import { Component, ElementRef, OnInit, ViewChild, AfterViewInit, ViewChildren, QueryList } from '@angular/core';
+import { Component, ElementRef, OnInit, ViewChild, AfterViewInit, ViewChildren, QueryList, HostListener } from '@angular/core';
 import { GameService } from '../services/game.service';
 import { GameHubService } from '../services/game-hub.service';
 import { DrawService } from '../services/draw.service';
-import { NgFor, NgIf, NgClass } from '@angular/common';
+import { NgFor, NgIf, NgClass, NgStyle } from '@angular/common';
 import { AuthService } from '../services/auth.service';
 import { Subscription } from 'rxjs';
+import { first  } from 'rxjs';
 import { CardService } from '../services/card.service';
 import { ActionPopupComponent, ActionPopupData } from '../action-popup/action-popup.component';
 
 @Component({
   selector: 'app-game',
-  imports: [NgFor, NgIf, NgClass, ActionPopupComponent],
+  imports: [NgFor, NgIf, NgClass, ActionPopupComponent, NgStyle ],
   templateUrl: './game.component.html',
   styleUrl: './game.component.css'
 })
@@ -41,6 +42,15 @@ export class GameComponent {
 
   testMode: boolean = true;
 
+  gamePaused: boolean = true;
+
+  playerColors: any[] = [
+    'blue',
+    'red',
+    'green',
+    'black'
+  ];
+
   @ViewChildren('diceCanvas') diceCanvases!: QueryList<ElementRef<HTMLCanvasElement>>;
 
   private diceSpritesheet = new Image();
@@ -59,6 +69,7 @@ export class GameComponent {
   private giveInterruptchanceSub?: Subscription;
   private showCardToEveryoneSub?: Subscription;
   private getGameFromServerSub?: Subscription;
+  private isEveryoneConnectedSub?: Subscription;
 
   constructor(
     private gameService: GameService,
@@ -69,6 +80,18 @@ export class GameComponent {
   ) {
   }
 
+  @HostListener('window:keydown', ['$event'])
+  handleKeyboardEvent(event: KeyboardEvent) {
+    const isChatInput = (event.target as HTMLElement)?.tagName === 'INPUT';
+
+    if (isChatInput) return;
+    if (this.gamePaused) return;
+
+    if (event.key === 'r' || event.key === 'R') {
+      this.rollDice(this.userIndex, true);
+    }
+  }
+
   ngOnDestroy() {
     this.onDieRollSub?.unsubscribe();
     this.onGameStartDieRollsProcessedSub?.unsubscribe();
@@ -76,9 +99,12 @@ export class GameComponent {
     this.giveInterruptchanceSub?.unsubscribe();
     this.showCardToEveryoneSub?.unsubscribe();
     this.getGameFromServerSub?.unsubscribe();
+    this.isEveryoneConnectedSub?.unsubscribe();
   }
 
   ngOnInit() {
+    this.drawService.playerColors = this.playerColors;
+
     this.game = this.gameService.getCurrentGame();
 
     var userId = this.authService.getUserId();
@@ -90,6 +116,7 @@ export class GameComponent {
     this.getGameFromServerSub = this.gameService.getGameFromServer(this.userId, this.game).subscribe({
       next: (data) => {
         this.game = data;
+
         this.initAfterLoadingGame();
       },
       error: (err) => {
@@ -111,6 +138,7 @@ export class GameComponent {
     this.userIndex = this.game.players.findIndex((p: any) => p.playerId === this.userId);
     this.initDice();
     this.gameHubService.startConnection(() => {
+      this.initializeIsEveryoneConnected();
       this.initializeOnDieRoll();
       this.initializeOnGameStartDieRollProcessed();
       this.initializeOnPlayerActionProcessed();
@@ -125,9 +153,34 @@ export class GameComponent {
           this.rollEnabled[index] = true;
         });
       }
-      debugger;
       this.initializeGameBoard();
     });
+  }
+
+  initializeIsEveryoneConnected() {
+    this.isEveryoneConnectedSub?.unsubscribe();
+    this.isEveryoneConnectedSub = this.gameHubService.isEveryoneConnected().subscribe((data) => {
+      if (data != null) {
+        this.checkPauseCondition(data);
+      }
+    });
+  }
+
+  checkPauseCondition(everyoneConnected: boolean) {
+    if (!everyoneConnected) {
+      this.pauseGame();
+    }
+    else {
+      this.resumeGame();
+    }
+  }
+
+  pauseGame() {
+    this.gamePaused = true;
+  }
+
+  resumeGame() {
+    this.gamePaused = false;
   }
 
   initializeOnDieRoll() {
@@ -135,6 +188,7 @@ export class GameComponent {
     this.onDieRollSub = this.gameHubService.onDieroll().subscribe((data) => {
       if (data) {
         this.showDiceRoll(data.playerId, data.roll, (playerId, roll) => {
+          debugger;
           if (data.playerId == this.userId) {
             if (this.game.state == "started") {
               this.gameHubService.processGameStartDieRoll(this.game.id, playerId, roll);
@@ -156,6 +210,10 @@ export class GameComponent {
     this.onGameStartDieRollsProcessedSub = this.gameHubService.onGameStartDieRollsProcessed().subscribe((model) => {
       if (model) {
         this.game = model.game;
+        this.diceCanvases.changes.pipe(first()).subscribe(() => {
+          this.drawAllDice();
+        });
+
         this.eventTextQueue.push(model.eventMessage);
         this.gameStateInfo = model;
 
@@ -193,6 +251,9 @@ export class GameComponent {
       if (data) {
         this.gameStateInfo = data;
         this.game = this.gameStateInfo.game;
+        this.diceCanvases.changes.pipe(first()).subscribe(() => {
+          this.drawAllDice();
+        });
 
         if (data.clientActionReportQueue && data.clientActionReportQueue.length > 0) {
           data.clientActionReportQueue.forEach((car: any, index: number) => {
@@ -222,12 +283,12 @@ export class GameComponent {
 
   initializeGiveInterruptChance() {
     this.giveInterruptchanceSub?.unsubscribe();
-      this.giveInterruptchanceSub = this.gameHubService.giveInterruptChance().subscribe((data: any) => {
-        if (data) {
-          // TODO : player cards that are applicable will get highlighted for easy playing?
-          // For example nope cards can not be played on other nope cards, oh jawel can only be played on nope, bandwagon can only be played on a move etc
-        }
-      });
+    this.giveInterruptchanceSub = this.gameHubService.giveInterruptChance().subscribe((data: any) => {
+      if (data) {
+        // TODO : player cards that are applicable will get highlighted for easy playing?
+        // For example nope cards can not be played on other nope cards, oh jawel can only be played on nope, bandwagon can only be played on a move etc
+      }
+    });
   }
 
   activateRollIfCurrentUser(playerId: string, rollType: string) {
@@ -564,11 +625,14 @@ export class GameComponent {
     this.diceCanvases.forEach((canvasRef, index) => {
       const dctx = canvasRef.nativeElement.getContext('2d');
       if (!dctx) return;
-      this.drawDie(dctx, 49);
+      var playerId = this.game.players[index].playerId;
+      var finalNumber = this.finalNumbers[playerId] == null ? 1 : this.finalNumbers[playerId];
+      this.drawDie(dctx, this.finalNumberFrames[finalNumber - 1]);
     })
   }
 
   showDiceRoll(playerId: string, roll: number, callback: (playerId: string, roll: number) => void) {
+    debugger;
     var playerIndex = this.game.players.findIndex((p: any) => p.playerId === playerId);
     this.rolling[playerIndex] = true;
     this.finalNumbers[playerIndex] = roll;
@@ -620,10 +684,8 @@ export class GameComponent {
       }
     }
 
-    if (this.game.state == "started") {
-      if (this.rollEnabled[playerIndex] == false) return;
-      this.rollEnabled[playerIndex] = false;
-    }
+    if (this.rollEnabled[playerIndex] == false) return;
+    this.rollEnabled[playerIndex] = false;
 
     this.gameHubService.rollDice(this.game.id, player.playerId);
   }
@@ -649,7 +711,6 @@ export class GameComponent {
     canvas.width = this.tileSize * 16;
     canvas.height = this.tileSize * 22;
     this.ctx = canvas.getContext('2d')!;
-    debugger;
     this.drawService.drawGameBoard(this.ctx, this.tileSize, this.game.tiles);
     this.drawService.drawPawns(this.ctx, this.tileSize, this.game.players, this.game.tiles);
   }

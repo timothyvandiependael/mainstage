@@ -13,7 +13,6 @@ import { AuthService } from './auth.service';
       next: ActivatedRouteSnapshot,
       state: RouterStateSnapshot
     ): boolean {
-      debugger;
       if (!this.authService.isLoggedIn()) {
         this.router.navigate(['/login']);
         return false;

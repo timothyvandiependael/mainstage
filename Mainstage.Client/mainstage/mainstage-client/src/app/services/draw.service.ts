@@ -4,12 +4,7 @@ import { Injectable } from '@angular/core';
   providedIn: 'root'
 })
 export class DrawService {
-  playerColors: any[] = [
-    'blue',
-    'red',
-    'green',
-    'black'
-  ];
+  playerColors: any[] = [];
 
   constructor() { }
 
@@ -63,8 +58,6 @@ export class DrawService {
         this.fillText(ctx, black, arial14, center, middle, tile.id.toString(), positionX + tileSize / 2, positionY + tileSize / 2);
       }
     });
-
-    debugger;
 
     var path = [
       { x: 9 * tileSize, y: 18.5 * tileSize },

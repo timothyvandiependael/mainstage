@@ -273,7 +273,7 @@ namespace Mainstage.API.Managers
 
                 from p in _context.GamePlayers
                 join g in _context.Games on p.GameId equals g.Id
-                where g.State == "open" || g.State == "ongoing"
+                where g.State == "open" || g.State == "ongoing" || g.State == "started"
                 select g
 
                 ).FirstOrDefaultAsync();

@@ -38,6 +38,9 @@ export class GameHubService {
   private onPlayerActionProcessedSource = new BehaviorSubject<any | null>(null);
   public onPlayerActionProcessed$ = this.onPlayerActionProcessedSource.asObservable();
 
+  private isEveryoneConnectedSource = new BehaviorSubject<boolean | null>(null);
+  public isEveryoneConnected$ = this.isEveryoneConnectedSource.asObservable();
+
   private showCardToEveryoneSource = new BehaviorSubject<{ playerId: string, card: any, jokerCard: string } | null>(null);
   public showCardToEveryone$ = this.showCardToEveryoneSource.asObservable();
 
@@ -66,7 +69,6 @@ export class GameHubService {
     });
 
     this.hubConnection.onclose(() => {
-      debugger;
       var userId = this.authService.getUserId();
       if (userId != null) {
         localStorage.setItem('lastUserId', userId);
@@ -150,10 +152,16 @@ export class GameHubService {
     return this.onPlayerActionProcessed$;
   }
 
+  isEveryoneConnected() {
+    this.hubConnection?.on('IsEveryoneConnected', (everyoneConnected: boolean | null) => {
+      this.isEveryoneConnectedSource.next(everyoneConnected);
+    });
+    return this.isEveryoneConnected$;
+  }
+
   onDieroll() {
     this.onDieRollSource.next(null);
     this.hubConnection?.on('DieRoll', (playerId, roll) => {
-      debugger;
       this.onDieRollSource.next({ playerId, roll });
     })
     return this.onDieRoll$;
@@ -162,7 +170,6 @@ export class GameHubService {
   onPlayerJoined() {
     this.onPlayerJoinedSource.next(null);
     this.hubConnection?.on('PlayerJoined', (player, game) => {
-      debugger;
       console.log("Player joined: ", player);
       console.log("For game: ", game);
       this.onPlayerJoinedSource.next({ game, player });
