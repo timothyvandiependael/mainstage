@@ -210,7 +210,6 @@ namespace Mainstage.API.Services
                 var car = new ClientActionReport()
                 {
                     PlayerId = player.PlayerId,
-                    Type = "perform",
                     EventMessage = string.Empty
                 };
                 info.ClientActionReportQueue.Add(car);
@@ -271,6 +270,7 @@ namespace Mainstage.API.Services
                     {
                         car.EventMessage =
                             $"De repetitie van {player.PlayerId} is geslaagd! {player.PlayerId} mag nu gooien om vooruit te gaan.";
+                        car.Type = "performpass0";
                     }
                     else
                     {
@@ -312,6 +312,7 @@ namespace Mainstage.API.Services
                             successType = "was glorieus! Gefeliciteerd, u bent gewonnen!";
                         }
                         car.EventMessage = $"Het optreden {location} van {player.PlayerId} {successType}";
+                        car.Type = "performpass";
                     }
 
                     await PassStage(info, player.PlayerId);
@@ -322,15 +323,18 @@ namespace Mainstage.API.Services
                     player.ActiveEffects.Remove("allornothing");
                     car.EventMessage = $"Het optreden van {player.PlayerId} was een grandioze klucht.";
                     _gameActionService.InsertInActionSequence(info, player.PlayerId, "teleport", "24");
+                    car.Type = "performfailallornothing";
                     await ActionSequenceNext(info);
                 }
                 else if (player.Position == 0)
                 {
                     car.EventMessage = $"De repetitie van {player.PlayerId} was een grandioze klucht.";
+                    car.Type = "performfail";
                     await ActionSequenceNext(info);
                 }
                 else
                 {
+                    car.Type = "performfail";
                     car.EventMessage = $"Het optreden van {player.PlayerId} was een grandioze klucht.";
                     _gameActionService.InsertInActionSequence(info, player.PlayerId, "teleport", failTileId.ToString());
                     await ActionSequenceNext(info);
@@ -522,7 +526,7 @@ namespace Mainstage.API.Services
 
         public async Task ExecuteMove(GameStateInfo info, string playerId, string direction, bool skipStage = false)
         {
-            var rollTurnAction = info.ActionSequence.FindLast(ta => ta.ActionType == "moveroll" && ta.PlayerId == playerId);
+            var rollTurnAction = info.ActionSequence.FindLast(ta => ta.ActionType == "move" && ta.PlayerId == playerId);
             info.ActionSequence.Remove(rollTurnAction);
             info.Game.Actions.Add(rollTurnAction);
 

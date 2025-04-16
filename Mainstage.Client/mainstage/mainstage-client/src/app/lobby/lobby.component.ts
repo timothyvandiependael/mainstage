@@ -29,6 +29,7 @@ export class LobbyComponent {
   newMessage: string = '';
   isChatLoading$: Observable<boolean>;
   isGamesLoading$: Observable<boolean>;
+  isLobbyLoading$: Observable<boolean>;
 
   private gameUpdatesSub?: Subscription;
   private chatUpdatesSub?: Subscription;
@@ -49,17 +50,23 @@ export class LobbyComponent {
   ) {
     this.isChatLoading$ = this.loadingService.getLoadingState('lobby-chat');
     this.isGamesLoading$ = this.loadingService.getLoadingState('lobby-games');
+    this.isLobbyLoading$ = this.loadingService.getLoadingState('lobby');
   }
 
   ngOnInit() {
 
     this.loadingService.show('lobby-chat');
     this.loadingService.show('lobby-games');
+    this.loadingService.show('lobby');
+    debugger;
 
     this.authService.checkIfLoggedIn();
 
     this.lobbyHubService.startLobbyConnection(() => {
-      this.lobbyHubService.isAlreadyInGame();
+      this.lobbyHubService.isAlreadyInGame(() => {
+        debugger;
+        this.loadingService.hide('lobby');
+      });
 
       this.gameUpdatesSub?.unsubscribe();
       this.gameUpdatesSub = this.lobbyHubService.getGameUpdates().subscribe((gameUpdates: any[]) => {

@@ -186,9 +186,9 @@ export class GameComponent {
   initializeOnDieRoll() {
     this.onDieRollSub?.unsubscribe();
     this.onDieRollSub = this.gameHubService.onDieroll().subscribe((data) => {
+      debugger;
       if (data) {
         this.showDiceRoll(data.playerId, data.roll, (playerId, roll) => {
-          debugger;
           if (data.playerId == this.userId) {
             if (this.game.state == "started") {
               this.gameHubService.processGameStartDieRoll(this.game.id, playerId, roll);
@@ -249,6 +249,7 @@ export class GameComponent {
     this.onPlayerActionProcessedSub?.unsubscribe();
     this.onPlayerActionProcessedSub = this.gameHubService.onPlayerActionProcessed().subscribe((data: any) => {
       if (data) {
+        debugger;
         this.gameStateInfo = data;
         this.game = this.gameStateInfo.game;
         this.diceCanvases.changes.pipe(first()).subscribe(() => {
@@ -335,9 +336,17 @@ export class GameComponent {
       var playerIndex = this.game.players.findIndex((p: any) => p.playerId == entry.playerId);
       this.drawService.movePawnBackward(this.ctx, playerIndex, start, destination, this.tileSize, this.game.tiles, this.game.players);
     }
-    else if (entry.type == "perform") {
-      // no action for now except reporting eventmessage
-      // including this for potential future actions
+    else if (entry.type == "performfail") {
+      // No action for now
+    }
+    else if (entry.type == "performpass0") {
+      this.activateRollIfCurrentUser(entry.playerId, "move");
+    }
+    else if (entry.type == "performpass") {
+      // TODO
+    }
+    else if (entry.type == "performfailallornothing") {
+
     }
     else if (entry.type == "teleport") {
       var teleportAction = this.game.actions.findLast((a: any) => a.playerId == entry.playerId && a.actionType == "teleport");
@@ -632,7 +641,6 @@ export class GameComponent {
   }
 
   showDiceRoll(playerId: string, roll: number, callback: (playerId: string, roll: number) => void) {
-    debugger;
     var playerIndex = this.game.players.findIndex((p: any) => p.playerId === playerId);
     this.rolling[playerIndex] = true;
     this.finalNumbers[playerIndex] = roll;

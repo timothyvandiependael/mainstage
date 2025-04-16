@@ -1,4 +1,9 @@
 <div class="lobby-container">
+    <div *ngIf="isLobbyLoading$ | async" class="loading-overlay">
+        <div class="loading-spinner">
+            Loading...
+        </div>
+      </div>
     <div class="top-bar">
         <button class="btn-left" (click)="openNewGameDialog()">Nieuw spel</button>
         <div class="btn-right">

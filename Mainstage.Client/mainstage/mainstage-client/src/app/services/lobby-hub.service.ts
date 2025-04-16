@@ -5,6 +5,7 @@ import { BehaviorSubject } from 'rxjs';
 import { AuthService } from './auth.service';
 import { GameService } from './game.service';
 import { Router } from '@angular/router';
+import { LoadingService } from './loading.service';
 
 @Injectable({
   providedIn: 'root'
@@ -106,16 +107,16 @@ export class LobbyHubService {
     return this.chatUpdates$;
   }
 
-  isAlreadyInGame() {
+  isAlreadyInGame(callback: () => void) {
     this.hubConnection?.invoke('IsAlreadyInGame')
       .then((game) => { 
-        console.log('Is Already In Game Request sent to lobby hub.') 
-        debugger;
+        console.log('Is Already In Game Request sent to lobby hub.');
+        callback();
         if (game && game.id > 0) {
           if (game.state == 'open') {
             this.router.navigate(['/game-lobby']);
           }
-          else if (game.state == 'ongoing') {
+          else if (game.state == 'ongoing' || game.state == 'started') {
             this.router.navigate(['/game']);
           }
         }
