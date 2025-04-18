@@ -186,9 +186,11 @@ export class GameComponent {
   initializeOnDieRoll() {
     this.onDieRollSub?.unsubscribe();
     this.onDieRollSub = this.gameHubService.onDieroll().subscribe((data) => {
-      debugger;
       if (data) {
         this.showDiceRoll(data.playerId, data.roll, (playerId, roll) => {
+          debugger;
+          var testRoll = 0;
+          if (testRoll > 0) roll = testRoll;
           if (data.playerId == this.userId) {
             if (this.game.state == "started") {
               this.gameHubService.processGameStartDieRoll(this.game.id, playerId, roll);

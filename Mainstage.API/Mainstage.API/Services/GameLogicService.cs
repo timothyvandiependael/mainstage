@@ -166,6 +166,7 @@ namespace Mainstage.API.Services
                 else
                 {
                     var turnPlayerId = highestRolls.First().PlayerId;
+                    _gameActionService.AddActionHistory(info, turnPlayerId, "startturn", string.Empty);
                     info.ActionSequence.Add(new GameAction
                     {
                         GameId = game.Id,
@@ -423,14 +424,32 @@ namespace Mainstage.API.Services
             }
             else
             {
-                // Get player for next turn, return to client
-                _gameActionService.InsertInActionSequence(info, newPlayerId, "startturn", string.Empty);
-                var car = new ClientActionReport
+                var eventTextAddition = newPlayer.Position == 0 ? "Gooi om te repeteren." : "Gooi voor je zet.";
+
+                _gameActionService.AddActionHistory(info, turnPlayerId, "startturn", string.Empty);
+
+                var car = new ClientActionReport();
+
+                if (newPlayer.Position == 0)
                 {
-                    PlayerId = newPlayerId,
-                    Type = "startturn",
-                    EventMessage = "{newPlayerId} is aan de beurt. Gooi voor je zet."
-                };
+                    _gameActionService.InsertInActionSequence(info, newPlayerId, "awaitingperformroll", string.Empty);
+                    car = new ClientActionReport
+                    {
+                        PlayerId = newPlayerId,
+                        Type = "startturn",
+                        EventMessage = $"{newPlayerId} is aan de beurt. {eventTextAddition}"
+                    };
+                }
+                else
+                {
+                    car = new ClientActionReport
+                    {
+                        PlayerId = newPlayerId,
+                        Type = "startturn",
+                        EventMessage = $"{newPlayerId} is aan de beurt. {eventTextAddition}"
+                    };
+                }
+
                 info.ClientActionReportQueue.Add(car);
             }
         }
