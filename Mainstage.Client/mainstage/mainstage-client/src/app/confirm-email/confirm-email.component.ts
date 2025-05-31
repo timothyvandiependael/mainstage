@@ -13,7 +13,7 @@ import { FormsModule } from '@angular/forms';
 })
 export class ConfirmEmailComponent {
   message: string = "";
-  success: boolean = false;
+  success: boolean = false ;
 
   constructor(private authService: AuthService, private route: ActivatedRoute, private router: Router) {}
 
