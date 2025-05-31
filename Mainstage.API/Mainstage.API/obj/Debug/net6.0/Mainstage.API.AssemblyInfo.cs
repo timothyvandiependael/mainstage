@@ -14,7 +14,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("Mainstage.API")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+f929e4842d4a4f83cb70392fa6721d8fe03fc285")]
 [assembly: System.Reflection.AssemblyProductAttribute("Mainstage.API")]
 [assembly: System.Reflection.AssemblyTitleAttribute("Mainstage.API")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

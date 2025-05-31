@@ -22,10 +22,10 @@ namespace Mainstage.API.SignalR
         private readonly CardManager _cardManager;
         private readonly GameActionService _gameActionService;
         public GameHub(
-            ChatMessageManager chatMessageManager, 
-            GameManager gameManager, 
+            ChatMessageManager chatMessageManager,
+            GameManager gameManager,
             GameOptionsManager gameOptionsManager,
-            GamePlayerManager gamePlayerManager, 
+            GamePlayerManager gamePlayerManager,
             GameLogicService gameLogicService,
             CardService cardService,
             CardManager cardManager,
@@ -62,7 +62,7 @@ namespace Mainstage.API.SignalR
 
             if (!game.Players.Any(p => p.PlayerId == userId))
             {
-                
+
 
                 game.Players.Add(gamePlayer);
                 await _gameManager.UpdateAsync(game);
@@ -111,10 +111,10 @@ namespace Mainstage.API.SignalR
                 }
                 else
                 {
-                    
+
                     await Groups.RemoveFromGroupAsync(Context.ConnectionId, gameId.ToString());
                     var player = _gamePlayerManager.GetByIdAsync(gameId, playerId);
-                    
+
                     await _gamePlayerManager.DeleteAsync(gameId, playerId);
                     game.Players.RemoveAll(p => p.PlayerId == playerId);
 
@@ -126,7 +126,7 @@ namespace Mainstage.API.SignalR
             {
                 // TODO : In game logic for exit
             }
-            
+
         }
 
         public async Task SendMessage(string message, int gameId, bool isSysMessage = false)
@@ -251,6 +251,18 @@ namespace Mainstage.API.SignalR
         public async Task RollDie(int gameId, string playerId)
         {
             var roll = _gameLogicService.Roll();
+
+            // For testing:
+            if (playerId == "Timo")
+            {
+                roll = 3;
+            }
+            else
+            {
+                roll = 2;
+            }
+
+            //
             await Clients.Group(gameId.ToString()).SendAsync("DieRoll", playerId, roll);
 
         }
@@ -266,110 +278,119 @@ namespace Mainstage.API.SignalR
 
         public async Task ProcessPlayerAction(GameStateInfo info, string type, Dictionary<string, string> parameters)
         {
-            var playerId = Context.User?.Identity?.Name;
-            if (info.ActionSequence.Count > 0 && info.ActionSequence[0].ActionType == "startturn")
+            try
             {
-                var startTurnAction = info.ActionSequence[0];
-                info.ActionSequence.Remove(startTurnAction);
-                info.Game.Actions.Add(startTurnAction);
-            }
-
-            if (type == "perform")
-            {
-                if (info.ActionSequence.Count > 0 && info.ActionSequence[0].ActionType == "awaitingperformroll")
+                var playerId = Context.User?.Identity?.Name;
+                if (info.ActionSequence.Count > 0 && info.ActionSequence[0].ActionType == "startturn")
                 {
-                    var awaitPerformRollAction = info.ActionSequence[0];
-                    info.ActionSequence.Remove(awaitPerformRollAction);
+                    var startTurnAction = info.ActionSequence[0];
+                    info.ActionSequence.Remove(startTurnAction);
+                    info.Game.Actions.Add(startTurnAction);
                 }
-                await _gameLogicService.ProcessRoll(info, playerId, type, parameters);
-                _gameActionService.InsertInActionSequence(info, playerId, type, parameters["roll"]);
-                await _gameLogicService.Perform(info);
-            }
-            else if (type == "move")
-            {
-                if (info.ActionSequence.Count > 0 && info.ActionSequence[0].ActionType == "awaitingmoveroll")
-                {
-                    var awaitMoveRollAction = info.ActionSequence[0];
-                    info.ActionSequence.Remove(awaitMoveRollAction);
-                }
-                await _gameLogicService.ProcessRoll(info, playerId, type, parameters);
 
-                var interrupted = await IsInterrupted(info, playerId, "move", string.Empty);
-                if (!interrupted)
+                if (type == "perform")
                 {
+                    if (info.ActionSequence.Count > 0 && info.ActionSequence[0].ActionType == "awaitingperformroll")
+                    {
+                        var awaitPerformRollAction = info.ActionSequence[0];
+                        info.ActionSequence.Remove(awaitPerformRollAction);
+                    }
+                    await _gameLogicService.ProcessRoll(info, playerId, type, parameters);
                     _gameActionService.InsertInActionSequence(info, playerId, type, parameters["roll"]);
-                    await _gameLogicService.ExecuteMove(info, playerId, "+");
-                }    
-            }
-            else if (type == "battle")
-            {
-                if (info.ActionSequence.Count > 0)
+                    await _gameLogicService.Perform(info);
+                }
+                else if (type == "move")
                 {
-                    var awaitingBattleRollAction = 
-                        info.ActionSequence.Where(a => a.ActionType == "awaitingbattleroll" && a.PlayerId == playerId).FirstOrDefault();
-                    if (awaitingBattleRollAction != null)
+                    if (info.ActionSequence.Count > 0 && info.ActionSequence[0].ActionType == "awaitingmoveroll")
                     {
-                        info.ActionSequence.Remove(awaitingBattleRollAction);
-                        parameters.Add("role", awaitingBattleRollAction.Parameter);
-                        await _gameLogicService.ProcessRoll(info, playerId, type, parameters);
+                        var awaitMoveRollAction = info.ActionSequence[0];
+                        info.ActionSequence.Remove(awaitMoveRollAction);
+                    }
+                    await _gameLogicService.ProcessRoll(info, playerId, type, parameters);
 
-                        var battleRollActions = info.ActionSequence.Where(a => a.ActionType == "awaitingbattleroll").ToList();
-                        if (battleRollActions.Count == 0)
+                    var interrupted = await IsInterrupted(info, playerId, "move", string.Empty);
+                    if (!interrupted)
+                    {
+                        _gameActionService.InsertInActionSequence(info, playerId, type, parameters["roll"]);
+                        await _gameLogicService.ExecuteMove(info, playerId, "+");
+                    }
+                }
+                else if (type == "battle")
+                {
+                    if (info.ActionSequence.Count > 0)
+                    {
+                        var awaitingBattleRollAction =
+                            info.ActionSequence.Where(a => a.ActionType == "awaitingbattleroll" && a.PlayerId == playerId).FirstOrDefault();
+                        if (awaitingBattleRollAction != null)
                         {
-                            await _gameLogicService.ResolveBattle(info);
+                            info.ActionSequence.Remove(awaitingBattleRollAction);
+                            parameters.Add("role", awaitingBattleRollAction.Parameter);
+                            await _gameLogicService.ProcessRoll(info, playerId, type, parameters);
+
+                            var battleRollActions = info.ActionSequence.Where(a => a.ActionType == "awaitingbattleroll").ToList();
+                            if (battleRollActions.Count == 0)
+                            {
+                                await _gameLogicService.ResolveBattle(info);
+                            }
                         }
+
+                    }
+                }
+                else if (type == "collective")
+                {
+                    if (info.ActionSequence.Count > 0)
+                    {
+                        var awaitingCollectiverollAction =
+                            info.ActionSequence.Where(a => a.ActionType == "awaitingcollectiveroll" && a.PlayerId == playerId).FirstOrDefault();
+                        if (awaitingCollectiverollAction != null)
+                        {
+                            info.ActionSequence.Remove(awaitingCollectiverollAction);
+                            await _gameLogicService.ProcessRoll(info, playerId, type, parameters);
+
+                            var collectiveRollActions = info.ActionSequence.Where(a => a.ActionType == "awaitingcollectiveroll").ToList();
+                            if (collectiveRollActions.Count == 0)
+                            {
+                                var cardId = int.Parse(awaitingCollectiverollAction.Parameter);
+                                await _cardService.ResolveCollectiveRoll(info, playerId, _gameLogicService, cardId);
+                            }
+                        }
+                    }
+                }
+                else if (type == "stashcard")
+                {
+                    await _gameLogicService.StashCard(info, playerId, parameters);
+                }
+                else if (type == "playcard")
+                {
+                    var card = await _cardManager.GetByIdAsync(int.Parse(parameters["cardid"]));
+                    _gameActionService.AddActionHistory(info, playerId, "playcard", card.Id.ToString());
+                    var jokerCard = string.Empty;
+                    if (card.Id == 73) // joker
+                    {
+                        jokerCard = parameters["jokercard"];
+                    }
+                    await ShowCardToEveryone(info, playerId, card, jokerCard);
+                    var interrupted = await IsInterrupted(info, playerId, "playcard", parameters["cardid"]);
+                    if (!interrupted)
+                    {
+                        await _gameLogicService.PlayCard(info, playerId, parameters);
+                    }
+                    else
+                    {
+                        _gameActionService.AddActionHistory(info, playerId, "cardinterrupted", card.Id.ToString());
+                        await _gameLogicService.DiscardCard(info, playerId, parameters);
                     }
 
                 }
-            }
-            else if (type == "collective")
-            {
-                if (info.ActionSequence.Count > 0)
-                {
-                    var awaitingCollectiverollAction =
-                        info.ActionSequence.Where(a => a.ActionType == "awaitingcollectiveroll" && a.PlayerId == playerId).FirstOrDefault();
-                    if (awaitingCollectiverollAction != null)
-                    {
-                        info.ActionSequence.Remove(awaitingCollectiverollAction);
-                        await _gameLogicService.ProcessRoll(info, playerId, type, parameters);
 
-                        var collectiveRollActions = info.ActionSequence.Where(a => a.ActionType == "awaitingcollectiveroll").ToList();
-                        if (collectiveRollActions.Count == 0)
-                        {
-                            var cardId = int.Parse(awaitingCollectiverollAction.Parameter);
-                            await _cardService.ResolveCollectiveRoll(info, playerId, _gameLogicService, cardId);
-                        }
-                    }
-                }
+                await Clients.Group(info.Game.Id.ToString()).SendAsync("OnPlayerActionProcessed", info);
             }
-            else if (type == "stashcard")
+            catch (Exception ex)
             {
-                await _gameLogicService.StashCard(info, playerId, parameters);
+                Console.WriteLine(ex.Message);
+                throw;
             }
-            else if (type == "playcard")
-            {
-                var card = await _cardManager.GetByIdAsync(int.Parse(parameters["cardid"]));
-                _gameActionService.AddActionHistory(info, playerId, "playcard", card.Id.ToString());
-                var jokerCard = string.Empty;
-                if (card.Id == 73) // joker
-                {
-                    jokerCard = parameters["jokercard"];
-                }
-                await ShowCardToEveryone(info, playerId, card, jokerCard);
-                var interrupted = await IsInterrupted(info, playerId, "playcard", parameters["cardid"]);
-                if (!interrupted)
-                {
-                    await _gameLogicService.PlayCard(info, playerId, parameters);
-                }
-                else
-                {
-                    _gameActionService.AddActionHistory(info, playerId, "cardinterrupted", card.Id.ToString());
-                    await _gameLogicService.DiscardCard(info, playerId, parameters);
-                }
-                
-            }
-
-            await Clients.Group(info.Game.Id.ToString()).SendAsync("OnPlayerActionProcessed", info);
+           
         }
 
         private async Task ShowCardToEveryone(GameStateInfo info, string playerId, Card card, string jokerCard)

@@ -25,7 +25,7 @@ export class GameComponent {
   userIndex: number = 0;
   hasTurn: boolean = false;
   turnPlayerId: string = '';
-  gameStateInfo: any = null;
+  gameStateInfo: any = {};
   currentRollType: string = 'perform';
 
   eventTextQueue: string[] = [];
@@ -188,7 +188,6 @@ export class GameComponent {
     this.onDieRollSub = this.gameHubService.onDieroll().subscribe((data) => {
       if (data) {
         this.showDiceRoll(data.playerId, data.roll, (playerId, roll) => {
-          debugger;
           var testRoll = 0;
           if (testRoll > 0) roll = testRoll;
           if (data.playerId == this.userId) {
@@ -249,9 +248,8 @@ export class GameComponent {
 
   initializeOnPlayerActionProcessed() {
     this.onPlayerActionProcessedSub?.unsubscribe();
-    this.onPlayerActionProcessedSub = this.gameHubService.onPlayerActionProcessed().subscribe((data: any) => {
+    this.onPlayerActionProcessedSub = this.gameHubService.onPlayerActionProcessed().subscribe(async (data: any) => {
       if (data) {
-        debugger;
         this.gameStateInfo = data;
         this.game = this.gameStateInfo.game;
         this.diceCanvases.changes.pipe(first()).subscribe(() => {
@@ -259,9 +257,12 @@ export class GameComponent {
         });
 
         if (data.clientActionReportQueue && data.clientActionReportQueue.length > 0) {
-          data.clientActionReportQueue.forEach((car: any, index: number) => {
+          for (const car of data.clientActionReportQueue) {
+            await this.processClientActionQueueEntry(car)
+          }
+          /*data.clientActionReportQueue.forEach((car: any, index: number) => {
             this.processClientActionQueueEntry(car, index);
-          });
+          });*/
 
           data.clientActionReportQueue = [];
         }
@@ -302,7 +303,7 @@ export class GameComponent {
     }
   }
 
-  processClientActionQueueEntry(entry: any, index: number) {
+  async processClientActionQueueEntry(entry: any) {
     if (entry.eventMessage)
       this.eventTextQueue.push(entry.eventMessage);
 
@@ -329,14 +330,14 @@ export class GameComponent {
       var start = parseInt(this.game.actions.findLast((a: any) => a.playerId == entry.playerId && a.actionType == "starttile").parameter);
       var destination = parseInt(this.game.actions.findLast((a: any) => a.playerId == entry.playerId && a.actionType == 'movetotile').parameter);
       var playerIndex = this.game.players.findIndex((p: any) => p.playerId == entry.playerId);
-      this.drawService.movePawnForward(this.ctx, playerIndex, start, destination, this.tileSize, this.game.tiles, this.game.players);
+      await this.drawService.movePawnForward(this.ctx, playerIndex, start, destination, this.tileSize, this.game.tiles, this.game.players);
     }
     else if (entry.type == "movebackward") {
       var moveroll = parseInt(this.game.actions.findLast((a: any) => a.playerId == entry.playerId && a.actionType == 'moveroll').parameter);
       var start = parseInt(this.game.actions.findLast((a: any) => a.playerId == entry.playerId && a.actionType == "starttile").parameter);
       var destination = parseInt(this.game.actions.findLast((a: any) => a.playerId == entry.playerId && a.actionType == 'movetotile').parameter);
       var playerIndex = this.game.players.findIndex((p: any) => p.playerId == entry.playerId);
-      this.drawService.movePawnBackward(this.ctx, playerIndex, start, destination, this.tileSize, this.game.tiles, this.game.players);
+      await this.drawService.movePawnBackward(this.ctx, playerIndex, start, destination, this.tileSize, this.game.tiles, this.game.players);
     }
     else if (entry.type == "performfail") {
       // No action for now
@@ -353,11 +354,12 @@ export class GameComponent {
     else if (entry.type == "teleport") {
       var teleportAction = this.game.actions.findLast((a: any) => a.playerId == entry.playerId && a.actionType == "teleport");
       var destination = parseInt(teleportAction.parameter);
-      this.drawService.teleportPawn(this.ctx, playerIndex, destination, this.tileSize, this.game.tiles, this.game.players);
+      await this.drawService.teleportPawn(this.ctx, playerIndex, destination, this.tileSize, this.game.tiles, this.game.players);
     }
     else if (entry.type == "carddrawn") {
+      debugger;
       if (entry.playerId == this.userId) {
-        var cardDrawnAction = this.game.actions.findLast((a: any) => a.playerId = entry.playerId && a.actionType == "carddrawn");
+        var cardDrawnAction = this.game.actions.findLast((a: any) => a.playerId == entry.playerId && a.actionType == "carddrawn");
         var card = this.game.drawPile.find((c: any) => c.id == parseInt(cardDrawnAction.parameter));
 
         this.showCardButtons = true;
@@ -380,7 +382,7 @@ export class GameComponent {
     }
     else if (entry.type == "fatlady") {
       var playerIndex = this.game.players.findIndex((p: any) => p.playerId === entry.playerId);
-      this.drawService.teleportPawn(this.ctx, playerIndex, 0, this.tileSize, this.game.tiles, this.game.players);
+      await this.drawService.teleportPawn(this.ctx, playerIndex, 0, this.tileSize, this.game.tiles, this.game.players);
 
       // TODO : reflect card loss on UI
     }
@@ -430,7 +432,7 @@ export class GameComponent {
       this.currentSelectedCardParameters['ethereal'] = 'true';
       this.aboutToPlayEtherealCard = false;
     }
-    this.currentSelectedCardParameters['cardid'] = card.id;
+    this.currentSelectedCardParameters['cardid'] = card.id.toString();
 
     switch (card.cardType) {
       case 'attack':
@@ -606,7 +608,8 @@ export class GameComponent {
 
   sendPlayCard() {
     this.hideCard();
-    this.gameHubService.processPlayerAction(this.gameStateInfo, "playcard", this.currentSelectedCardParameters);
+    var parameters = { ...this.currentSelectedCardParameters };
+    this.gameHubService.processPlayerAction(this.gameStateInfo, "playcard", parameters);
   }
 
   stashCard() {
@@ -636,8 +639,11 @@ export class GameComponent {
     this.diceCanvases.forEach((canvasRef, index) => {
       const dctx = canvasRef.nativeElement.getContext('2d');
       if (!dctx) return;
+      debugger;
       var playerId = this.game.players[index].playerId;
-      var finalNumber = this.finalNumbers[playerId] == null ? 1 : this.finalNumbers[playerId];
+      var playerIndex = this.game.players.findIndex((p: any) => p.playerId === playerId);
+      debugger;
+      var finalNumber = this.finalNumbers[playerIndex] == null ? 1 : this.finalNumbers[playerIndex];
       this.drawDie(dctx, this.finalNumberFrames[finalNumber - 1]);
     })
   }

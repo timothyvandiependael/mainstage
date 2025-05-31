@@ -140,7 +140,7 @@ export class GameHubService {
   processPlayerAction(gameStateInfo: any, type: string, parameters: any) {
     if (this.hubConnection) {
       this.hubConnection.send('ProcessPlayerAction', gameStateInfo, type, parameters)
-        .then(() => console.log('Action sent'))
+        .then(() => console.log('Action sent : ', gameStateInfo))
         .catch(err => console.error('Error sending action ', err));
     }
   }

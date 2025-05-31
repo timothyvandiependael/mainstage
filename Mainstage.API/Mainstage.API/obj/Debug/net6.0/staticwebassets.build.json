@@ -1,11 +1,12 @@
 {
   "Version": 1,
-  "Hash": "zBD7VCLeJYWJGrO/KGNbhSBy+blW7msNnkWXTGer1ec=",
+  "Hash": "8Zv9GrWRHMReCdgtrU9F7FntXlRTM/FkGJelPsj8Z+4=",
   "Source": "Mainstage.API",
   "BasePath": "_content/Mainstage.API",
   "Mode": "Default",
   "ManifestType": "Build",
   "ReferencedProjectsConfiguration": [],
   "DiscoveryPatterns": [],
-  "Assets": []
+  "Assets": [],
+  "Endpoints": []
 }

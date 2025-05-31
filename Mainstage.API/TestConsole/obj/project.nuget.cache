@@ -1,8 +1,8 @@
 {
   "version": 2,
-  "dgSpecHash": "VBn6eoRR/arPInHAbByu1fTUUMm5nT9/yyWWicrxTGJwrhF/1g5NNlwYS/p0oZU8F0+FP8R843hUDcWi0lvLYQ==",
+  "dgSpecHash": "I0wkV6Y+bDM=",
   "success": true,
-  "projectFilePath": "C:\\Users\\timot\\source\\repos\\Mainstage\\Mainstage.API\\TestConsole\\TestConsole.csproj",
+  "projectFilePath": "C:\\Users\\timot\\repos\\mainstage\\Mainstage.API\\TestConsole\\TestConsole.csproj",
   "expectedPackageFiles": [
     "C:\\Users\\timot\\.nuget\\packages\\azure.core\\1.35.0\\azure.core.1.35.0.nupkg.sha512",
     "C:\\Users\\timot\\.nuget\\packages\\azure.identity\\1.10.3\\azure.identity.1.10.3.nupkg.sha512",

@@ -4,7 +4,7 @@ using Mainstage.API.Models;
 
 
 var optionsBuilder = new DbContextOptionsBuilder<MainstageContext>();
-optionsBuilder.UseSqlServer(@"Server=MSI;Database=Mainstage;User Id=mainstage;Password=Tlb192H4c3HL5FgtNkQJ;TrustServerCertificate=True;");
+optionsBuilder.UseSqlServer(@"Server=LAPTOP-47MFF14P;Database=Mainstage;User Id=mainstage;Password=Tlb192H4c3HL5FgtNkQJ;TrustServerCertificate=True;");
 
 using (var context = new MainstageContext(optionsBuilder.Options))
 {
@@ -14,7 +14,7 @@ using (var context = new MainstageContext(optionsBuilder.Options))
 
         if (card != null)
         {
-            Console.WriteLine("card: {card.Id}");
+            Console.WriteLine($"card: {card.Id} {card.Name} {card.Description}");
         }
         else
         {

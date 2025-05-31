@@ -1,0 +1,135 @@
+{
+  "Version": 1,
+  "WorkspaceRootPath": "C:\\Users\\timot\\repos\\mainstage\\Mainstage.API\\",
+  "Documents": [
+    {
+      "AbsoluteMoniker": "D:0:0:{682FBC14-2B08-4B01-9368-DD72630375DB}|Mainstage.API\\Mainstage.API.csproj|c:\\users\\timot\\repos\\mainstage\\mainstage.api\\mainstage.api\\signalr\\gamehub.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{682FBC14-2B08-4B01-9368-DD72630375DB}|Mainstage.API\\Mainstage.API.csproj|solutionrelative:mainstage.api\\signalr\\gamehub.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{682FBC14-2B08-4B01-9368-DD72630375DB}|Mainstage.API\\Mainstage.API.csproj|c:\\users\\timot\\repos\\mainstage\\mainstage.api\\mainstage.api\\services\\gamelogicservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{682FBC14-2B08-4B01-9368-DD72630375DB}|Mainstage.API\\Mainstage.API.csproj|solutionrelative:mainstage.api\\services\\gamelogicservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{682FBC14-2B08-4B01-9368-DD72630375DB}|Mainstage.API\\Mainstage.API.csproj|c:\\users\\timot\\repos\\mainstage\\mainstage.api\\mainstage.api\\signalr\\lobbyhub.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{682FBC14-2B08-4B01-9368-DD72630375DB}|Mainstage.API\\Mainstage.API.csproj|solutionrelative:mainstage.api\\signalr\\lobbyhub.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{682FBC14-2B08-4B01-9368-DD72630375DB}|Mainstage.API\\Mainstage.API.csproj|c:\\users\\timot\\repos\\mainstage\\mainstage.api\\mainstage.api\\managers\\gamemanager.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{682FBC14-2B08-4B01-9368-DD72630375DB}|Mainstage.API\\Mainstage.API.csproj|solutionrelative:mainstage.api\\managers\\gamemanager.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{682FBC14-2B08-4B01-9368-DD72630375DB}|Mainstage.API\\Mainstage.API.csproj|c:\\users\\timot\\repos\\mainstage\\mainstage.api\\mainstage.api\\appsettings.json||{90A6B3A7-C1A3-4009-A288-E2FF89E96FA0}",
+      "RelativeMoniker": "D:0:0:{682FBC14-2B08-4B01-9368-DD72630375DB}|Mainstage.API\\Mainstage.API.csproj|solutionrelative:mainstage.api\\appsettings.json||{90A6B3A7-C1A3-4009-A288-E2FF89E96FA0}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{682FBC14-2B08-4B01-9368-DD72630375DB}|Mainstage.API\\Mainstage.API.csproj|c:\\users\\timot\\repos\\mainstage\\mainstage.api\\mainstage.api\\data\\mainstagecontext.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{682FBC14-2B08-4B01-9368-DD72630375DB}|Mainstage.API\\Mainstage.API.csproj|solutionrelative:mainstage.api\\data\\mainstagecontext.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{682FBC14-2B08-4B01-9368-DD72630375DB}|Mainstage.API\\Mainstage.API.csproj|c:\\users\\timot\\repos\\mainstage\\mainstage.api\\mainstage.api\\controllers\\gamecontroller.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{682FBC14-2B08-4B01-9368-DD72630375DB}|Mainstage.API\\Mainstage.API.csproj|solutionrelative:mainstage.api\\controllers\\gamecontroller.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    }
+  ],
+  "DocumentGroupContainers": [
+    {
+      "Orientation": 0,
+      "VerticalTabListWidth": 256,
+      "DocumentGroups": [
+        {
+          "DockedWidth": 200,
+          "SelectedChildIndex": 4,
+          "Children": [
+            {
+              "$type": "Document",
+              "DocumentIndex": 4,
+              "Title": "appsettings.json",
+              "DocumentMoniker": "C:\\Users\\timot\\repos\\mainstage\\Mainstage.API\\Mainstage.API\\appsettings.json",
+              "RelativeDocumentMoniker": "Mainstage.API\\appsettings.json",
+              "ToolTip": "C:\\Users\\timot\\repos\\mainstage\\Mainstage.API\\Mainstage.API\\appsettings.json",
+              "RelativeToolTip": "Mainstage.API\\appsettings.json",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAoAAAAEAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.001642|",
+              "WhenOpened": "2025-05-21T13:01:46.286Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 5,
+              "Title": "MainstageContext.cs",
+              "DocumentMoniker": "C:\\Users\\timot\\repos\\mainstage\\Mainstage.API\\Mainstage.API\\Data\\MainstageContext.cs",
+              "RelativeDocumentMoniker": "Mainstage.API\\Data\\MainstageContext.cs",
+              "ToolTip": "C:\\Users\\timot\\repos\\mainstage\\Mainstage.API\\Mainstage.API\\Data\\MainstageContext.cs",
+              "RelativeToolTip": "Mainstage.API\\Data\\MainstageContext.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-05-21T13:01:41.459Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 1,
+              "Title": "GameLogicService.cs",
+              "DocumentMoniker": "C:\\Users\\timot\\repos\\mainstage\\Mainstage.API\\Mainstage.API\\Services\\GameLogicService.cs",
+              "RelativeDocumentMoniker": "Mainstage.API\\Services\\GameLogicService.cs",
+              "ToolTip": "C:\\Users\\timot\\repos\\mainstage\\Mainstage.API\\Mainstage.API\\Services\\GameLogicService.cs",
+              "RelativeToolTip": "Mainstage.API\\Services\\GameLogicService.cs",
+              "ViewState": "AgIAAIsCAAAAAAAAAAAiwCECAAAaAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-05-21T12:59:08.492Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 3,
+              "Title": "GameManager.cs",
+              "DocumentMoniker": "C:\\Users\\timot\\repos\\mainstage\\Mainstage.API\\Mainstage.API\\Managers\\GameManager.cs",
+              "RelativeDocumentMoniker": "Mainstage.API\\Managers\\GameManager.cs",
+              "ToolTip": "C:\\Users\\timot\\repos\\mainstage\\Mainstage.API\\Mainstage.API\\Managers\\GameManager.cs",
+              "RelativeToolTip": "Mainstage.API\\Managers\\GameManager.cs",
+              "ViewState": "AgIAAB0AAAAAAAAAAAAkwC4AAAAMAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-05-21T12:59:08.541Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 0,
+              "Title": "GameHub.cs",
+              "DocumentMoniker": "C:\\Users\\timot\\repos\\mainstage\\Mainstage.API\\Mainstage.API\\SignalR\\GameHub.cs",
+              "RelativeDocumentMoniker": "Mainstage.API\\SignalR\\GameHub.cs",
+              "ToolTip": "C:\\Users\\timot\\repos\\mainstage\\Mainstage.API\\Mainstage.API\\SignalR\\GameHub.cs",
+              "RelativeToolTip": "Mainstage.API\\SignalR\\GameHub.cs",
+              "ViewState": "AgIAADkBAAAAAAAAAADwv4EBAABoAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-05-21T12:59:08.544Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 6,
+              "Title": "GameController.cs",
+              "DocumentMoniker": "C:\\Users\\timot\\repos\\mainstage\\Mainstage.API\\Mainstage.API\\Controllers\\GameController.cs",
+              "RelativeDocumentMoniker": "Mainstage.API\\Controllers\\GameController.cs",
+              "ToolTip": "C:\\Users\\timot\\repos\\mainstage\\Mainstage.API\\Mainstage.API\\Controllers\\GameController.cs",
+              "RelativeToolTip": "Mainstage.API\\Controllers\\GameController.cs",
+              "ViewState": "AQIAACkAAAAAAAAAAAAwwBYAAAAJAAAA",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-05-21T12:59:08.548Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 2,
+              "Title": "LobbyHub.cs",
+              "DocumentMoniker": "C:\\Users\\timot\\repos\\mainstage\\Mainstage.API\\Mainstage.API\\SignalR\\LobbyHub.cs",
+              "RelativeDocumentMoniker": "Mainstage.API\\SignalR\\LobbyHub.cs",
+              "ToolTip": "C:\\Users\\timot\\repos\\mainstage\\Mainstage.API\\Mainstage.API\\SignalR\\LobbyHub.cs",
+              "RelativeToolTip": "Mainstage.API\\SignalR\\LobbyHub.cs",
+              "ViewState": "AgIAAB4AAAAAAAAAAAAowDEAAAAMAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-05-21T12:59:08.55Z",
+              "EditorCaption": ""
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

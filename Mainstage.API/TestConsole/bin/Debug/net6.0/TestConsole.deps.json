@@ -1943,7 +1943,10 @@
           "System.IdentityModel.Tokens.Jwt": "6.36.0"
         },
         "runtime": {
-          "Mainstage.API.dll": {}
+          "Mainstage.API.dll": {
+            "assemblyVersion": "1.0.0.0",
+            "fileVersion": "1.0.0.0"
+          }
         }
       }
     }
